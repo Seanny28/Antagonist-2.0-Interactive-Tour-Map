@@ -990,43 +990,6 @@
 
       const dateLabel = formatDate(show.date);
       const headerMeta = [dateLabel, show.venue].filter(Boolean).join(" · ");
-	const isMobile = window.innerWidth < 768;
-    const appEl = document.querySelector('.app');
-    const detailsEl = document.getElementById('show-details');
-    const toggleEl = document.getElementById('map-toggle');
-
-    if (isMobile && appEl && detailsEl && toggleEl) {
-      let collapsed = false;
-
-      function setCollapsed(state) {
-        collapsed = state;
-        if (collapsed) {
-          appEl.classList.add('map-collapsed');
-        } else {
-          appEl.classList.remove('map-collapsed');
-        }
-      }
-
-      // Auto-collapse map when you scroll down the setlist
-      detailsEl.addEventListener('scroll', () => {
-        if (!collapsed && detailsEl.scrollTop > 40) {
-          setCollapsed(true);
-        } else if (collapsed && detailsEl.scrollTop < 5) {
-          // If user scrolls back to top, expand map
-          setCollapsed(false);
-        }
-      });
-
-      // Tap the handle to toggle map size
-      toggleEl.addEventListener('click', () => {
-        setCollapsed(!collapsed);
-        if (!collapsed) {
-          // when expanding the map, scroll list back to top
-          detailsEl.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
-    }
-
       const tabsHtml = show.artists
         .map(
           (a, idx) => `
