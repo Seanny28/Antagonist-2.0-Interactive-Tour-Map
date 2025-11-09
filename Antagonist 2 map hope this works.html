@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Playboi Carti - Antagonist 2.0 Tour Map</title>
+  <title>Antagonist 2.0 Interactive Tour Map</title>
+
+	<!-- Make it scale correctly on phones -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
   <link
@@ -20,17 +23,22 @@
     }
 
     body {
-      display: flex;
-      height: 100vh;
+      margin: 0;
       background: #050509;
       color: #f5f5f5;
       overflow: hidden; /* stop whole page from scrolling */
     }
 
+    /* Desktop layout: map left, panel right */
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
     #map {
       flex: 2;
     }
-
+	  
     #info-panel {
       flex: 1;
       padding: 16px 20px;
@@ -217,19 +225,102 @@
       color: #b0b0b0;
       font-variant-numeric: tabular-nums;
     }
+
+	  
+    /* Scrollbar styling for the setlist card */
+    #show-details::-webkit-scrollbar {
+      width: 6px;
+    }
+    #show-details::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+    }
+
+    /* -------- MOBILE OVERRIDES -------- */
+    @media (max-width: 768px) {
+      .app {
+        flex-direction: column;  /* stack map and panel */
+      }
+
+      #map {
+        flex: none;
+        height: 55vh;           /* top portion of screen */
+        width: 100%;
+      }
+
+      #info-panel {
+        flex: none;
+        height: 45vh;           /* bottom portion */
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #222;
+        padding: 12px 16px;
+      }
+
+      #info-panel h1 {
+        font-size: 1rem;
+      }
+
+      #info-panel h2 {
+        font-size: 0.9rem;
+      }
+
+      ul {
+        font-size: 0.9rem;
+      }
+
+      #show-details {
+        padding: 8px 0 10px 0;
+        border-radius: 8px 8px 0 0;
+        max-height: calc(45vh - 70px); /* keep some space for headers */
+      }
+
+      /* Make artist tabs thumb-friendly + scrollable */
+      .artist-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        margin-top: 8px;
+        gap: 6px;
+      }
+
+      .artist-tab {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+    }
   </style>
 </head>
 <body>
+ <div class="app">
   <div id="map"></div>
 
   <aside id="info-panel">
-    <h1>Antagonist 2.0 — Tour Map</h1>
-    <p class="meta">Hover: show date · Click: see all sets</p>
+      <!-- your existing panel content (title, artist tabs, show-details, etc.) goes here -->
+      <h1>ANTAGONIST 2.0 — TOUR MAP</h1>
+
+      <!-- Example structure – keep whatever you already had -->
+      <div class="meta">Hover: show date · Click: see all sets</div>
+
+	  <div class="section">
+        <span class="pill">Artists</span>
+      </div>
+
+      <div class="artist-tabs" id="artist-tabs">
+        <!-- tabs are injected by JS -->
+      </div>
 
     <div id="show-details">
-      <p>Select a city on the map to see the setlists.</p>
-    </div>
-  </aside>
+        <!-- setlists injected by JS -->
+      </div>
+
+      <div class="hint">
+        Select a city on the map to see the setlists.
+      </div>
+    </aside>
+  </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
