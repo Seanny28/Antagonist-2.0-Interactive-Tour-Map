@@ -890,11 +890,11 @@
 
     shows.forEach(show => {
       const marker = L.circleMarker([show.lat, show.lon], {
-        radius: 7,
-        weight: 1.5,
+        radius: 13,
+        weight: 3,
         color: "#f13b56",
         fillColor: "#f13b56",
-        fillOpacity: 0.8
+        fillOpacity: 0.85
       }).addTo(map);
 
       const dateLabel = formatDate(show.date);
