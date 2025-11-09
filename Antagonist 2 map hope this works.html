@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Playboi Carti - Antagonist 2.0 Tour Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background: #050509;
+      color: #f5f5f5;
+      overflow: hidden; /* stop whole page from scrolling */
+    }
+
+    #map {
+      flex: 2;
+    }
+
+    #info-panel {
+      flex: 1;
+      padding: 16px 20px;
+      border-left: 1px solid #222;
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden; /* everything contained in panel */
+    }
+
+    #info-panel h1 {
+      font-size: 1.2rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #f13b56;
+    }
+
+    #info-panel h2 {
+      font-size: 1rem;
+      margin-top: 8px;
+      margin-bottom: 4px;
+      color: #ffffff;
+    }
+
+    .meta {
+      font-size: 0.85rem;
+      color: #b0b0b0;
+      margin-bottom: 6px;
+    }
+
+    ul {
+      list-style: none;
+      margin-left: 0;
+      padding-left: 0;
+      font-size: 0.9rem;
+    }
+
+    ul li {
+      margin-bottom: 2px;
+    }
+
+    .section {
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #444;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #b0b0b0;
+    }
+
+    /* Scrollable setlist/card area */
+    #show-details {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 0; /* required so flexbox lets it shrink */
+      padding: 8px 4px 8px 0;
+      margin-top: 4px;
+      border-top: 1px solid #202020;
+      background: #07070c;
+      box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.45);
+      border-radius: 10px 0 0 0;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: auto;        /* stays pinned at bottom of panel */
+      border-top: 1px solid #222;
+      padding-top: 8px;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: #111;
+      color: #f5f5f5;
+    }
+
+    /* Artist tabs – visually distinct from section labels */
+    .artist-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .artist-tab {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 6px 14px;
+      border-radius: 999px;
+
+      border: none;
+      background: #181824;
+      color: #f5f5f5;
+
+      font-size: 0.85rem;
+      font-weight: 500;
+
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+      transform: translateY(0);
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.1s ease;
+    }
+
+    .artist-tab:hover {
+      background: #222234;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.65);
+      transform: translateY(-1px);
+    }
+
+    .artist-tab-time {
+      font-size: 0.78rem;
+      color: #c6c6c6;
+      opacity: 0.9;
+    }
+
+    .artist-tab.active {
+      background: #f13b56;
+      color: #050509;
+      box-shadow:
+        0 0 0 1px #f13b56,
+        0 4px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Album chart styles */
+    .album-chart {
+      margin-top: 8px;
+    }
+
+    .album-chart-bar {
+      display: flex;
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #333;
+      margin-bottom: 8px;
+    }
+
+    .album-chart-segment {
+      height: 100%;
+    }
+
+    .album-chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8rem;
+    }
+
+    .album-legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .album-legend-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .album-legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .album-legend-count {
+      color: #b0b0b0;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <aside id="info-panel">
+    <h1>Antagonist 2.0 — Tour Map</h1>
+    <p class="meta">Hover: show date · Click: see all sets</p>
+
+    <div id="show-details">
+      <p>Select a city on the map to see the setlists.</p>
+    </div>
+  </aside>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script>
+    // --------- 1. Data for shows (SLC + Portland) ---------
+
+    const shows = [
+      {
+        city: "Salt Lake City",
+        state: "UT",
+        venue: "Delta Center",
+        date: "2025-10-03",
+        lat: 40.7683,
+        lon: -111.9011,
+        defaultArtistIndex: 4, // Playboi Carti as default tab
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "8:00 PM",
+            songs: [
+              "#ARP (Live debut)",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy"
+            ],
+            uniqueSongs: ["#ARP (Live debut)"],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 1,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "8:25 PM",
+            songs: [
+              "Lifestyle (shortened)",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "9:00 PM",
+            songs: [
+              "party n get high (interlude) (Live debut)",
+              "how u feel?",
+              "FAKENGGAS (shortened)",
+              "SYRUP SIPPIN",
+              "jumanji",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT (shortened)",
+              "screwed up",
+              "ABOUT MONEY (shortened)",
+              "BLITZ (shortened)",
+              "risk",
+              "soooo high (Live debut; shortened)",
+              "stfu"
+            ],
+            uniqueSongs: [
+              "party n get high (interlude) (Live debut)",
+              "soooo high (Live debut; shortened)"
+            ],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 3,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "9:50 PM",
+            songs: [
+              "Lord Of Chaos (shortened)",
+              "Blakk Rokkstar",
+              "Money Spread",
+              "delusional",
+              "It's Over",
+              "Lose It",
+              "LiveLeak",
+              "Green Room",
+              "mewtwo (Intro into i need u)",
+              "i need u",
+              "Succubus",
+              "Me N My Kup (shortened)",
+              "Rock N Roll",
+              "Trap Jump",
+              "Freestyle 2",
+              "ss",
+              "overseas",
+              "Fighting My Demons"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "A Great Chaos": 10,
+              "More Chaos": 5,
+              "Project X": 1,
+              "X": 1,
+              "Others": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "10:55 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+              "Can You Stand the Rain (New Edition song)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY (Live debut)",
+              "Stop Breathing",
+              "Rockstar Made",
+              "ALIVE",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "FE!N (Travis Scott cover)",
+              "Type Shit (Future & Metro Boomin cover)",
+              "Long Time (Intro)",
+              "POP OUT (played again; shortened)",
+              "POP OUT (played again)",
+              "POP OUT (played again)",
+              "POP OUT (played one last time)"
+            ],
+            uniqueSongs: ["WAKE UP F1LTHY (Live debut)"],
+            albumStats: {
+              "MUSIC": 20,
+              "Whole Lotta Red": 3,
+              "Covers": 3,
+              "Die Lit": 2,
+              "Others": 1
+            }
+          }
+        ]
+      },
+
+      {
+        city: "Portland",
+        state: "OR",
+        venue: "Moda Center",
+        date: "2025-10-05",
+        lat: 45.5316,
+        lon: -122.6668,
+        defaultArtistIndex: 4, // Carti
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "7:00 PM",
+            songs: [
+              "#ARP",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 1,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "7:21 PM",
+            songs: [
+              "Lifestyle",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "7:53 PM",
+            songs: [
+              "show u how (Live debut)",
+              "LOCK IN (tour debut; shortened)",
+              "how u feel?",
+              "FAKENGGAS",
+              "SYRUP SIPPIN",
+              "jumanji",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT (shortened)",
+              "screwed up",
+              "stfu",
+              "ABOUT MONEY",
+              "BLITZ",
+              "risk",
+              "soooo high"
+            ],
+            uniqueSongs: [
+              "show u how (Live debut)",
+              "LOCK IN (tour debut; shortened)"
+            ],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 4,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "8:36 PM",
+            songs: [
+              "Lord Of Chaos",
+              "Blakk Rokkstar",
+              "Money Spread",
+              "delusional",
+              "It's Over",
+              "Lose It",
+              "LiveLeak",
+              "Green Room",
+              "mewtwo",
+              "i need u",
+              "Succubus",
+              "Me N My Kup",
+              "Rock N Roll",
+              "Trap Jump",
+              "Freestyle 2",
+              "ss",
+              "overseas",
+              "Fighting My Demons"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "A Great Chaos": 10,
+              "More Chaos": 5,
+              "Project X": 1,
+              "X": 1,
+              "Others": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "9:45 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+              "Control (tour debut)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY",
+              "Stop Breathing",
+              "Rockstar Made",
+              "ALIVE",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "OLYMPIAN"
+            ],
+            uniqueSongs: ["Control (tour debut)"],
+            albumStats: {
+              "MUSIC": 16,
+              "Whole Lotta Red": 4,
+              "Die Lit": 1,
+              "Others": 1,
+              "Covers": 1
+            }
+          }
+        ]
+      },
+
+      {
+        city: "Seattle",
+        state: "WA",
+        venue: "Climate Pledge Arena",
+        date: "2025-10-08",
+        lat: 47.622,
+        lon: -122.354,
+        defaultArtistIndex: 4, // Carti
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "7:05 PM",
+            songs: [
+              "#ARP",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy",
+	      "Profit"
+            ],
+            uniqueSongs: ["Tour Debut of 'Profit'"],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 2,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "7:25 PM",
+            songs: [
+              "Pick A Side",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: ["Pick A Side (live debut)"],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 1,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1,
+	      "Other": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "8:00 PM",
+            songs: [
+              "jumanji",
+              "LOCK IN",
+              "how u feel?",
+              "FAKENGGAS",
+              "SYRUP SIPPIN",
+              "show u how",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT",
+              "screwed up",
+              "stfu",
+              "ABOUT MONEY",
+              "BLITZ",
+              "risk",
+              "soooo high"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 4,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "8:36 PM",
+            songs: [
+              "Lord Of Chaos",
+              "Blakk Rokkstar (Intro played but paused when fans rushed floor)",
+              "Rock N Roll (Came back after long pause)"
+            ],
+            uniqueSongs: ["Set cut off early due to crowd rushing the floor"],
+            albumStats: {
+              "More Chaos": 2,
+              "Project X": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "9:50 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+	      "ss (with Ken Carson)",
+	      "Fighting My Demons (with Ken Carson)",
+              "Control",
+	      "On That Time (Tour Debut)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "OLYMPIAN",
+	      "POP OUT (Played Again)",
+	      "Shoota (Tour Debut)",
+	      "FE!N (Travis Scott cover)",
+	      "Location (Tour Debut)",
+	      "Long Time (Intro)",
+	      "Alive",
+	      "Made It This Far (Live Debut, unreleased)"
+            ],
+            uniqueSongs: [
+	      "Ken Carson on stage with Carti", 
+	      "'On That Time' tour debut",
+	      "'Shoota' tour debut", 
+	      "'Location' tour debut", 
+	      "'Made It This Far' live debut"
+	    ],
+            albumStats: {
+              "MUSIC": 17,
+              "Whole Lotta Red": 5,
+              "Die Lit": 3,
+              "Others": 2,
+              "Covers": 4,
+	      "Playboi Carti": 1
+            }
+          }
+        ]
+      }
+    ];
+
+    // --------- 2. Album color palette ---------
+
+    const albumColors = {
+      // Carti
+      "MUSIC": "#7ac74f",
+      "Whole Lotta Red": "#e63946",
+      "Covers": "#f1c40f",
+      "Die Lit": "#ff9f1c",
+      "Playboi Carti": "#475939",
+      "Others": "#8884d8",
+
+      // Ken Carson
+      "A Great Chaos": "#7ac74f",
+      "More Chaos": "#a1d466",
+      "Project X": "#f1c40f",
+      "X": "#ff9f1c",
+
+      // Destroy Lonely
+      "<3³": "#7ac74f",
+      "LOVE LASTS FOREVER": "#a1d466",
+      "NO STYLIST": "#f1c40f",
+      "If Looks Could Kill": "#ff9f1c",
+
+      // Homixide Gang
+      "Homixide Lifestyle 2": "#7ac74f",
+      "Homixide Lifestyle": "#a1d466",
+      "i5u5we5": "#f1c40f",
+      "Snot or Not": "#ff9f1c",
+      "Snotty World": "#8884d8",
+
+      // ApolloRed1
+      "Midnight Blassic": "#7ac74f",
+      "ApolloRed1 Vs the World": "#f1c40f",
+      "Tantrum": "#ff9f1c"
+    };
+
+    // --------- 3. Helpers ---------
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
+    }
+
+    function renderAlbumChartFromStats(stats) {
+      if (!stats) return "";
+
+      const entries = Object.entries(stats);
+      const total = entries.reduce((sum, [, count]) => sum + count, 0);
+
+      const barSegments = entries
+        .map(([album, count]) => {
+          const color = albumColors[album] || "#666";
+          const pct = ((count / total) * 100).toFixed(1);
+          return `<div class="album-chart-segment"
+                      style="flex:${count};background-color:${color};"
+                      title="${album} – ${count} song(s), ${pct}%">
+                  </div>`;
+        })
+        .join("");
+
+      const legendItems = entries
+        .map(([album, count]) => {
+          const color = albumColors[album] || "#666";
+          return `
+            <div class="album-legend-item">
+              <div class="album-legend-main">
+                <span class="album-legend-swatch" style="background-color:${color};"></span>
+                <span>${album}</span>
+              </div>
+              <span class="album-legend-count">${count}</span>
+            </div>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="album-chart">
+          <div class="album-chart-bar">
+            ${barSegments}
+          </div>
+          <div class="album-chart-legend">
+            ${legendItems}
+          </div>
+        </div>
+      `;
+    }
+
+    // --------- 4. Map init ---------
+
+    const map = L.map("map", { zoomControl: true, scrollWheelZoom: true }).setView([37.8, -96], 4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    const showDetailsEl = document.getElementById("show-details");
+
+    // --------- 5. Render artist section inside a show ---------
+
+    function renderArtistSection(show, artistIndex) {
+      const artist = show.artists[artistIndex];
+      const songsList = artist.songs
+        .map((s, i) => `<li>${i + 1}. ${s}</li>`)
+        .join("");
+      const uniqueSongsText =
+        artist.uniqueSongs && artist.uniqueSongs.length
+          ? artist.uniqueSongs.join(", ")
+          : "None";
+
+      const albumChartHtml = renderAlbumChartFromStats(artist.albumStats);
+
+      const container = document.getElementById("artist-content");
+      container.innerHTML = `
+        <div class="section">
+          <span class="pill">Setlist — ${artist.name}</span>
+          <ul>${songsList}</ul>
+        </div>
+        <div class="section">
+          <span class="pill">Exclusive / Notes</span>
+          <p>${uniqueSongsText}</p>
+        </div>
+        ${
+          albumChartHtml
+            ? `<div class="section">
+                 <span class="pill">Songs by Album</span>
+                 ${albumChartHtml}
+               </div>`
+            : ""
+        }
+      `;
+    }
+
+    // --------- 6. Render full show (header + tabs + artist content) ---------
+
+    function renderShowDetails(show, artistIndexOverride) {
+      const defaultIndex =
+        typeof artistIndexOverride === "number"
+          ? artistIndexOverride
+          : show.defaultArtistIndex || 0;
+
+      const dateLabel = formatDate(show.date);
+      const headerMeta = [dateLabel, show.venue].filter(Boolean).join(" · ");
+
+      const tabsHtml = show.artists
+        .map(
+          (a, idx) => `
+        <button class="artist-tab" data-artist-index="${idx}">
+          <span>${a.name}</span>
+          <span class="artist-tab-time">${a.onstage}</span>
+        </button>`
+        )
+        .join("");
+
+      showDetailsEl.innerHTML = `
+        <h2>${show.city}, ${show.state}</h2>
+        <p class="meta">${headerMeta}</p>
+
+        <div class="section">
+          <span class="pill">Artists</span>
+          <div class="artist-tabs">
+            ${tabsHtml}
+          </div>
+        </div>
+
+        <div id="artist-content"></div>
+      `;
+
+      const tabEls = Array.from(document.querySelectorAll(".artist-tab"));
+
+      tabEls.forEach((tabEl) => {
+        const idx = Number(tabEl.dataset.artistIndex);
+        tabEl.addEventListener("click", () => {
+          tabEls.forEach(t => t.classList.remove("active"));
+          tabEl.classList.add("active");
+          renderArtistSection(show, idx);
+        });
+      });
+
+      const initial = Math.min(
+        Math.max(defaultIndex, 0),
+        show.artists.length - 1
+      );
+      if (tabEls[initial]) tabEls[initial].classList.add("active");
+      renderArtistSection(show, initial);
+    }
+
+    // --------- 7. Add markers + tooltips ---------
+
+    shows.forEach(show => {
+      const marker = L.circleMarker([show.lat, show.lon], {
+        radius: 7,
+        weight: 1.5,
+        color: "#f13b56",
+        fillColor: "#f13b56",
+        fillOpacity: 0.8
+      }).addTo(map);
+
+      const dateLabel = formatDate(show.date);
+
+      marker.bindTooltip(
+        `<strong>${show.city}, ${show.state}</strong><br/>
+         ${dateLabel}<br/>
+         <em>Click to view all sets</em>`,
+        { direction: "top", opacity: 0.9 }
+      );
+
+      marker.on("click", () => renderShowDetails(show));
+    });
+
+    if (shows.length > 0) {
+      const bounds = L.latLngBounds(shows.map(s => [s.lat, s.lon]));
+      map.fitBounds(bounds.pad(0.2));
+    }
+  </script>
+</body>
+</html>
