@@ -236,6 +236,32 @@
       border-radius: 999px;
     }
 
+	   /* Little "handle" to expand/collapse the map on mobile */
+    .map-toggle {
+      display: none; /* only on mobile */
+      border: none;
+      background: transparent;
+      color: #aaa;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 4px 0 2px;
+      margin-top: 6px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .map-toggle-bar {
+      width: 44px;
+      height: 4px;
+      border-radius: 999px;
+      background: #333;
+    }
+	  
     /* -------- MOBILE OVERRIDES -------- */
     @media (max-width: 768px) {
       .app {
@@ -290,6 +316,22 @@
         padding: 8px 12px;
         font-size: 0.9rem;
       }
+		.map-toggle {
+        display: flex;
+      }
+
+      /* When the app has .map-collapsed, shrink the map and grow the panel */
+      .app.map-collapsed #map {
+        height: 25vh;
+      }
+
+      .app.map-collapsed #info-panel {
+        height: 75vh;
+      }
+
+      .app.map-collapsed #show-details {
+        max-height: calc(75vh - 70px);
+      }
     }
   </style>
 </head>
@@ -298,13 +340,16 @@
   <div id="map"></div>
 
   <aside id="info-panel">
-      <!-- your existing panel content (title, artist tabs, show-details, etc.) goes here -->
       <h1>ANTAGONIST 2.0 — TOUR MAP</h1>
+      <div class="meta">Tap a city on the map, then pick an artist tab to see their set.</div>
 
-      <!-- Example structure – keep whatever you already had -->
-      <div class="meta">Hover: show date · Click: see all sets</div>
+      <!-- Mobile handle to expand/shrink the map -->
+      <button id="map-toggle" class="map-toggle" type="button">
+        <span class="map-toggle-bar"></span>
+        MAP / SETLIST
+      </button>
 
-	  <div class="section">
+      <div class="section">
         <span class="pill">Artists</span>
       </div>
 
@@ -317,7 +362,7 @@
       </div>
 
       <div class="hint">
-        Select a city on the map to see the setlists.
+        Tip: Scroll the setlist to focus on songs, tap the bar above to see more map again.
       </div>
     </aside>
   </div>
@@ -886,6 +931,18 @@
       attribution: "&copy; OpenStreetMap"
     }).addTo(map);
 
+	  const map = L.map('map', {
+      center: [39.5, -98.35],
+      zoom: 4,
+      scrollWheelZoom: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+
     const showDetailsEl = document.getElementById("show-details");
 
     // --------- 5. Render artist section inside a show ---------
@@ -933,6 +990,42 @@
 
       const dateLabel = formatDate(show.date);
       const headerMeta = [dateLabel, show.venue].filter(Boolean).join(" · ");
+	const isMobile = window.innerWidth < 768;
+    const appEl = document.querySelector('.app');
+    const detailsEl = document.getElementById('show-details');
+    const toggleEl = document.getElementById('map-toggle');
+
+    if (isMobile && appEl && detailsEl && toggleEl) {
+      let collapsed = false;
+
+      function setCollapsed(state) {
+        collapsed = state;
+        if (collapsed) {
+          appEl.classList.add('map-collapsed');
+        } else {
+          appEl.classList.remove('map-collapsed');
+        }
+      }
+
+      // Auto-collapse map when you scroll down the setlist
+      detailsEl.addEventListener('scroll', () => {
+        if (!collapsed && detailsEl.scrollTop > 40) {
+          setCollapsed(true);
+        } else if (collapsed && detailsEl.scrollTop < 5) {
+          // If user scrolls back to top, expand map
+          setCollapsed(false);
+        }
+      });
+
+      // Tap the handle to toggle map size
+      toggleEl.addEventListener('click', () => {
+        setCollapsed(!collapsed);
+        if (!collapsed) {
+          // when expanding the map, scroll list back to top
+          detailsEl.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
 
       const tabsHtml = show.artists
         .map(
