@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Antagonist 2.0 Interactive Tour Map</title>
 
-	<!-- Make it scale correctly on phones -->
+  <!-- Make it scale correctly on phones -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
@@ -19,179 +19,195 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Inter", sans-serif;
     }
 
     body {
-      margin: 0;
-      background: #050509;
+      background: radial-gradient(circle at top left, #2b1235 0, #050509 48%);
       color: #f5f5f5;
-      overflow: hidden; /* stop whole page from scrolling */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Desktop layout: map left, panel right */
-    .app {
+    .app-shell {
+      flex: 1;
       display: flex;
-      height: 100vh;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 18px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at top left, #3b143f 0, #050509 55%);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    header .subheading {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    header .meta {
+      margin-left: auto;
+      font-size: 0.8rem;
+      opacity: 0.75;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    header .meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #f13b56;
+      box-shadow: 0 0 6px rgba(241, 59, 86, 0.9);
+    }
+
+    .layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      max-height: calc(100vh - 64px);
     }
 
     #map {
-      flex: 2;
+      flex: 1.3;
+      min-height: 260px;
+      background: #050509;
     }
-	  
+
     #info-panel {
       flex: 1;
-      padding: 16px 20px;
-      border-left: 1px solid #222;
-      background: #0a0a0f;
+      max-width: 480px;
+      min-width: 0;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at top right, #321637 0, #06040a 60%);
       display: flex;
       flex-direction: column;
+      padding: 14px 14px 10px;
       gap: 10px;
-      overflow: hidden; /* everything contained in panel */
     }
 
-    #info-panel h1 {
-      font-size: 1.2rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #f13b56;
-    }
+    @media (max-width: 880px) {
+      .layout {
+        flex-direction: column;
+        max-height: none;
+      }
 
-    #info-panel h2 {
-      font-size: 1rem;
-      margin-top: 8px;
-      margin-bottom: 4px;
-      color: #ffffff;
-    }
+      #map {
+        flex: none;
+        height: 52vh;
+        max-height: 430px;
+      }
 
-    .meta {
-      font-size: 0.85rem;
-      color: #b0b0b0;
-      margin-bottom: 6px;
-    }
-
-    ul {
-      list-style: none;
-      margin-left: 0;
-      padding-left: 0;
-      font-size: 0.9rem;
-    }
-
-    ul li {
-      margin-bottom: 2px;
-    }
-
-    .section {
-      margin-top: 8px;
+      #info-panel {
+        max-width: none;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
     }
 
     .pill {
-      display: inline-block;
-      padding: 2px 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
       border-radius: 999px;
-      border: 1px solid #444;
-      font-size: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 8, 18, 0.9);
+      font-size: 0.72rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #b0b0b0;
+      letter-spacing: 0.12em;
+      opacity: 0.9;
     }
 
-	  .pill-button {
-  cursor: pointer;
-  background: #181824;
-  border: 1px solid #444;
-  padding: 4px 10px;
-}
+    .section {
+      margin-bottom: 10px;
+    }
 
-.pill-button:hover {
-  background: #222234;
-  color: #ffffff;
-}
-
-.pill-button.active {
-  background: #f13b56;
-  color: #050509;
-  border-color: #f13b56;
-}
-
-.song-stats-list {
-  list-style: none;
-  padding-left: 0;
-  margin-top: 6px;
-  font-size: 0.85rem;
-}
-
-.song-stat-item {
-  margin-bottom: 4px;
-}
-
-.song-stat-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  color: #f5f5f5;
-  text-align: left;
-  padding: 4px 0;
-  cursor: pointer;
-  font: inherit;
-}
-
-.song-stat-button:hover {
-  color: #f13b56;
-}
-
-.song-frequency {
-  font-size: 0.78rem;
-  color: #b0b0b0;
-  padding-left: 4px;
-  margin-top: 2px;
-}
-
-    /* Scrollable setlist/card area */
     #show-details {
-      flex: 1 1 auto;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
-      min-height: 0; /* required so flexbox lets it shrink */
-      padding: 8px 4px 8px 0;
-      margin-top: 4px;
-      border-top: 1px solid #202020;
-      background: #07070c;
-      box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.45);
-      border-radius: 10px 0 0 0;
+      padding-right: 4px;
     }
 
-    .hint {
+    #show-details::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #show-details::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .meta {
       font-size: 0.8rem;
-      color: #888;
-      margin-top: auto;        /* stays pinned at bottom of panel */
-      border-top: 1px solid #222;
-      padding-top: 8px;
+      opacity: 0.8;
     }
 
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
-      background: #111;
-      color: #f5f5f5;
+    .show-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 6px;
     }
 
-    /* Artist tabs – visually distinct from section labels */
+    .show-location {
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .show-venue {
+      font-size: 0.82rem;
+      opacity: 0.9;
+    }
+
+    .show-date {
+      font-size: 0.82rem;
+      opacity: 0.9;
+    }
+
     .artist-tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 6px;
+      margin: 6px 0 8px;
     }
 
     .artist-tab {
-      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-
+      gap: 6px;
       padding: 6px 14px;
       border-radius: 999px;
 
@@ -226,157 +242,199 @@
     .artist-tab.active {
       background: #f13b56;
       color: #050509;
-      box-shadow:
-        0 0 0 1px #f13b56,
-        0 4px 10px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 3px 10px rgba(241, 59, 86, 0.8);
     }
 
-    /* Album chart styles */
-    .album-chart {
-      margin-top: 8px;
+    .artist-tab.active .artist-tab-time {
+      color: #050509;
+      opacity: 0.95;
     }
 
-    .album-chart-bar {
+    .artist-name {
+      font-weight: 600;
+    }
+
+    .songs-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+
+    .song-list {
+      list-style: none;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .song-list li {
+      padding: 2px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    }
+
+    .song-list li:last-child {
+      border-bottom: none;
+    }
+
+    .chips-row {
       display: flex;
-      height: 18px;
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid #333;
-      margin-bottom: 8px;
-    }
-
-    .album-chart-segment {
-      height: 100%;
-    }
-
-    .album-chart-legend {
-      display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 4px;
-      font-size: 0.8rem;
+      margin-top: 6px;
     }
 
-    .album-legend-item {
+    .chip {
+      font-size: 0.74rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(10, 8, 18, 0.9);
+      opacity: 0.9;
+    }
+
+    .chip-accent {
+      border-color: rgba(241, 59, 86, 0.9);
+      color: #fddfe4;
+      background: rgba(241, 59, 86, 0.14);
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+
+    .album-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 0.78rem;
+    }
+
+    .album-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(10, 8, 18, 0.9);
+    }
+
+    .album-pill strong {
+      font-weight: 600;
+    }
+
+    .album-pill span {
+      opacity: 0.85;
+    }
+
+    /* New Tour Song Stats button styling */
+    .pill-button {
+      cursor: pointer;
+      background: #f13b56;        /* red box */
+      color: #000000;             /* black text */
+      border: 2px solid #f13b56;
+      font-weight: 900;           /* very bold */
+      padding: 10px 16px;
+      border-radius: 6px;         /* small radius -> squarish */
+      display: inline-block;
+      font-size: 0.95rem;
+    }
+
+    .pill-button:hover {
+      background: #ff6d80;        /* lighter red on hover */
+      border-color: #ff6d80;
+    }
+
+    .pill-button.active {
+      background: #000000;        /* invert when active */
+      color: #f13b56;
+      border-color: #f13b56;
+    }
+
+    .song-stats-list {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 6px;
+      font-size: 0.85rem;
+    }
+
+    .song-stat-item {
+      margin-bottom: 4px;
+    }
+
+    .song-stat-button {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
+      gap: 8px;
+      background: transparent;
+      border: none;
+      color: #f5f5f5;
+      text-align: left;
+      padding: 4px 0;
+      cursor: pointer;
+      font: inherit;
     }
 
-    .album-legend-main {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .song-stat-button:hover {
+      color: #f13b56;
     }
 
-    .album-legend-swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
-    }
-
-    .album-legend-count {
+    .song-frequency {
+      font-size: 0.78rem;
       color: #b0b0b0;
-      font-variant-numeric: tabular-nums;
-    }
-
-	  
-    /* Scrollbar styling for the setlist card */
-    #show-details::-webkit-scrollbar {
-      width: 6px;
-    }
-    #show-details::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 999px;
-    }
-
-    /* -------- MOBILE OVERRIDES -------- */
-    @media (max-width: 768px) {
-      .app {
-        flex-direction: column;  /* stack map and panel */
-      }
-
-      #map {
-        flex: none;
-        height: 55vh;           /* top portion of screen */
-        width: 100%;
-      }
-
-      #info-panel {
-        flex: none;
-        height: 45vh;           /* bottom portion */
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid #222;
-        padding: 12px 16px;
-      }
-
-      #info-panel h1 {
-        font-size: 1rem;
-      }
-
-      #info-panel h2 {
-        font-size: 0.9rem;
-      }
-
-      ul {
-        font-size: 0.9rem;
-      }
-
-      #show-details {
-        padding: 8px 0 10px 0;
-        border-radius: 8px 8px 0 0;
-        max-height: calc(45vh - 70px); /* keep some space for headers */
-      }
-
-      /* Make artist tabs thumb-friendly + scrollable */
-      .artist-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 4px;
-        margin-top: 8px;
-        gap: 6px;
-      }
-
-      .artist-tab {
-        flex: 0 0 auto;
-        padding: 8px 12px;
-        font-size: 0.9rem;
-      }
+      padding-left: 4px;
+      margin-top: 2px;
     }
   </style>
 </head>
+
 <body>
- <div class="app">
-  <div id="map"></div>
-
-  <aside id="info-panel">
-      <!-- your existing panel content (title, artist tabs, show-details, etc.) goes here -->
-      <h1>ANTAGONIST 2.0 — TOUR MAP</h1>
-
-      <!-- Example structure – keep whatever you already had -->
-      <div class="meta">Hover: show date · Click: see all sets</div>
-
-	<div class="section">
-  <button class="pill pill-button" id="tour-stats-tab">
-    Tour song stats
-  </button>
-</div>
-
-    <div id="show-details">
-        <!-- setlists injected by JS -->
+  <div class="app-shell">
+    <header>
+      <div>
+        <h1>Antagonist 2.0 setlist explorer</h1>
+        <div class="subheading">Playboi Carti · Fall 2025</div>
       </div>
 
-      <div class="hint">
-        Select a city on the map to see the setlists.
+      <div class="meta">
+        <span>
+          <span class="dot"></span>
+          Live tour data · fan compiled
+        </span>
+        <span>Map: tap a city · Panel: tap an artist</span>
       </div>
-    </aside>
+    </header>
+
+    <div class="layout">
+      <div id="map"></div>
+
+      <aside id="info-panel">
+        <div class="section">
+          <button class="pill pill-button" id="tour-stats-tab">
+            Tour song stats
+          </button>
+        </div>
+
+        <div id="show-details">
+          <!-- setlists + stats injected by JS -->
+        </div>
+      </aside>
+    </div>
   </div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
 
   <script>
     // --------- 1. Data for shows (SLC + Portland) ---------
@@ -1007,254 +1065,165 @@
 
     // --------- 2. Album color palette ---------
 
-    const albumColors = {
-      // Carti
-      "MUSIC": "#7ac74f",
-      "Whole Lotta Red": "#e63946",
-      "Covers": "#f1c40f",
-      "Die Lit": "#ff9f1c",
-      "Playboi Carti": "#475939",
-      "Others": "#8884d8",
-
-      // Ken Carson
-      "A Great Chaos": "#7ac74f",
-      "More Chaos": "#a1d466",
-      "Project X": "#f1c40f",
-      "X": "#ff9f1c",
-
-      // Destroy Lonely
-      "<3³": "#7ac74f",
-      "LOVE LASTS FOREVER": "#a1d466",
-      "NO STYLIST": "#f1c40f",
-      "If Looks Could Kill": "#ff9f1c",
-
-      // Homixide Gang
-      "Homixide Lifestyle 2": "#7ac74f",
-      "Homixide Lifestyle": "#a1d466",
-      "i5u5we5": "#f1c40f",
-      "Snot or Not": "#ff9f1c",
-      "Snotty World": "#8884d8",
-
-      // ApolloRed1
-      "Midnight Blassic": "#7ac74f",
-      "ApolloRed1 Vs the World": "#f1c40f",
-      "Tantrum": "#ff9f1c"
-    };
-
-    // --------- 3. Helpers ---------
-
-    function formatDate(iso) {
-      if (!iso) return "";
-      const [y, m, d] = iso.split("-");
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      return `${months[Number(m) - 1]} ${Number(d)}, ${y}`;
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
     }
-
-    function renderAlbumChartFromStats(stats) {
-      if (!stats) return "";
-
-      const entries = Object.entries(stats);
-      const total = entries.reduce((sum, [, count]) => sum + count, 0);
-
-      const barSegments = entries
-        .map(([album, count]) => {
-          const color = albumColors[album] || "#666";
-          const pct = ((count / total) * 100).toFixed(1);
-          return `<div class="album-chart-segment"
-                      style="flex:${count};background-color:${color};"
-                      title="${album} – ${count} song(s), ${pct}%">
-                  </div>`;
-        })
-        .join("");
-
-      const legendItems = entries
-        .map(([album, count]) => {
-          const color = albumColors[album] || "#666";
-          return `
-            <div class="album-legend-item">
-              <div class="album-legend-main">
-                <span class="album-legend-swatch" style="background-color:${color};"></span>
-                <span>${album}</span>
-              </div>
-              <span class="album-legend-count">${count}</span>
-            </div>
-          `;
-        })
-        .join("");
-
-      return `
-        <div class="album-chart">
-          <div class="album-chart-bar">
-            ${barSegments}
-          </div>
-          <div class="album-chart-legend">
-            ${legendItems}
-          </div>
-        </div>
-      `;
-    }
-
-    // --------- 4. Map init ---------
-
-    const map = L.map("map", { zoomControl: true, scrollWheelZoom: true }).setView([37.8, -96], 4);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(map);
 
     const showDetailsEl = document.getElementById("show-details");
 
-	  function normalizeSongTitle(title) {
-  if (!title) return "";
-  // remove anything in parentheses and trim
-  return title.replace(/\s*\(.*?\)\s*/g, "").trim();
-}
+    function normalizeSongTitle(title) {
+      if (!title) return "";
+      // remove anything in parentheses and trim
+      return title.replace(/\s*\(.*?\)\s*/g, "").trim();
+    }
 
-// Build { artistName: { totalShows, songs: [...] } }
-function computeTourStats() {
-  const statsByArtist = {};
-  const showsByArtist = {};
+    // Build { artistName: { totalShows, songs: [...] } }
+    function computeTourStats() {
+      const statsByArtist = {};
+      const showsByArtist = {};
 
-  shows.forEach((show, showIndex) => {
-    show.artists.forEach((artist) => {
-      const artistName = artist.name;
-      if (!statsByArtist[artistName]) statsByArtist[artistName] = {};
-      if (!showsByArtist[artistName]) showsByArtist[artistName] = new Set();
-      showsByArtist[artistName].add(showIndex);
+      shows.forEach((show, showIndex) => {
+        show.artists.forEach((artist) => {
+          const artistName = artist.name;
+          if (!statsByArtist[artistName]) statsByArtist[artistName] = {};
+          if (!showsByArtist[artistName]) showsByArtist[artistName] = new Set();
+          showsByArtist[artistName].add(showIndex);
 
-      const songsMap = statsByArtist[artistName];
+          const songsMap = statsByArtist[artistName];
 
-      artist.songs.forEach((songTitle) => {
-        const baseTitle = normalizeSongTitle(songTitle);
-        const key = baseTitle.toUpperCase(); // treat POP OUT / Pop Out as same
+          artist.songs.forEach((songTitle) => {
+            const baseTitle = normalizeSongTitle(songTitle);
+            const key = baseTitle.toUpperCase();
 
-        if (!songsMap[key]) {
-          songsMap[key] = {
-            label: baseTitle,
-            plays: 0,
-            showIndices: new Set()
-          };
-        }
+            if (!songsMap[key]) {
+              songsMap[key] = {
+                label: baseTitle,
+                plays: 0,
+                showIndices: new Set()
+              };
+            }
 
-        const songStat = songsMap[key];
-        songStat.plays += 1;              // total plays
-        songStat.showIndices.add(showIndex); // which shows it appeared in
-      });
-    });
-  });
-
-  const result = {};
-  Object.entries(statsByArtist).forEach(([artistName, songsMap]) => {
-    const totalShows = showsByArtist[artistName]
-      ? showsByArtist[artistName].size
-      : 0;
-
-    const songs = Object.values(songsMap).map((info) => ({
-      songName: info.label,
-      plays: info.plays,
-      showCount: info.showIndices.size,
-      pctShows:
-        totalShows > 0 ? (info.showIndices.size / totalShows) * 100 : 0
-    }));
-
-    result[artistName] = {
-      totalShows,
-      songs
-    };
-  });
-
-  return result;
-}
-
-function renderTourStats() {
-  const stats = computeTourStats();
-
-  let html = `
-    <h2>Tour Song Stats</h2>
-    <p class="meta">Total plays and show frequency by artist</p>
-  `;
-
-  Object.entries(stats).forEach(([artistName, artistStats]) => {
-    const totalShows = artistStats.totalShows;
-    const sortedSongs = artistStats.songs
-      .slice()
-      .sort(
-        (a, b) =>
-          b.plays - a.plays || a.songName.localeCompare(b.songName)
-      );
-
-	  const tourStatsTabEl = document.getElementById("tour-stats-tab");
-if (tourStatsTabEl) {
-  tourStatsTabEl.addEventListener("click", () => {
-    renderTourStats();
-    tourStatsTabEl.classList.add("active");
-  });
-}
-
-
-    const songsList = sortedSongs
-      .map((song, idx) => {
-        const safeId = `freq-${artistName.replace(/[^a-z0-9]+/gi, "-")}-${idx}`;
-        const pctRounded = Math.round(song.pctShows);
-        const playsLabel = song.plays === 1 ? "play" : "plays";
-
-        return `
-          <li class="song-stat-item">
-            <button
-              class="song-stat-button"
-              data-frequency-target="${safeId}"
-              data-pct="${pctRounded}"
-              data-shows="${song.showCount}"
-              data-total-shows="${totalShows}"
-            >
-              <span class="song-name">${song.songName}</span>
-              <span class="song-plays">${song.plays} ${playsLabel}</span>
-            </button>
-            <div class="song-frequency" id="${safeId}" style="display:none;"></div>
-          </li>
-        `;
-      })
-      .join("");
-
-    html += `
-      <div class="section">
-        <span class="pill">${artistName} — ${totalShows} show${totalShows === 1 ? "" : "s"}</span>
-        <ul class="song-stats-list">
-          ${songsList}
-        </ul>
-      </div>
-    `;
-  });
-
-  showDetailsEl.innerHTML = html;
-
-  // clicking a song shows its % of shows
-  const buttons = showDetailsEl.querySelectorAll(".song-stat-button");
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.dataset.frequencyTarget;
-      const targetEl = document.getElementById(targetId);
-      const pct = btn.dataset.pct;
-      const showCount = btn.dataset.shows;
-      const totalShows = btn.dataset.totalShows;
-
-      const isVisible = targetEl.style.display === "block";
-
-      // collapse all other open frequency rows
-      showDetailsEl
-        .querySelectorAll(".song-frequency")
-        .forEach((el) => {
-          el.style.display = "none";
+            const songStat = songsMap[key];
+            songStat.plays += 1;
+            songStat.showIndices.add(showIndex);
+          });
         });
+      });
 
-      if (!isVisible) {
-        targetEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
-        targetEl.style.display = "block";
-      }
-    });
-  });
-}
+      const result = {};
+      Object.entries(statsByArtist).forEach(([artistName, songsMap]) => {
+        const totalShows = showsByArtist[artistName]
+          ? showsByArtist[artistName].size
+          : 0;
 
+        const songs = Object.values(songsMap).map((info) => ({
+          songName: info.label,
+          plays: info.plays,
+          showCount: info.showIndices.size,
+          pctShows:
+            totalShows > 0 ? (info.showIndices.size / totalShows) * 100 : 0
+        }));
+
+        result[artistName] = {
+          totalShows,
+          songs
+        };
+      });
+
+      return result;
+    }
+
+    function renderTourStats() {
+      const stats = computeTourStats();
+
+      let html = `
+        <h2>Tour Song Stats</h2>
+        <p class="meta">Total plays and show frequency by artist</p>
+      `;
+
+      Object.entries(stats).forEach(([artistName, artistStats]) => {
+        const totalShows = artistStats.totalShows;
+        const sortedSongs = artistStats.songs
+          .slice()
+          .sort(
+            (a, b) =>
+              b.plays - a.plays || a.songName.localeCompare(b.songName)
+          );
+
+        const songsList = sortedSongs
+          .map((song, idx) => {
+            const safeId = `freq-${artistName.replace(/[^a-z0-9]+/gi, "-")}-${idx}`;
+            const pctRounded = Math.round(song.pctShows);
+            const playsLabel = song.plays === 1 ? "play" : "plays";
+
+            return `
+              <li class="song-stat-item">
+                <button
+                  class="song-stat-button"
+                  data-frequency-target="${safeId}"
+                  data-pct="${pctRounded}"
+                  data-shows="${song.showCount}"
+                  data-total-shows="${totalShows}"
+                >
+                  <span class="song-name">${song.songName}</span>
+                  <span class="song-plays">${song.plays} ${playsLabel}</span>
+                </button>
+                <div class="song-frequency" id="${safeId}" style="display:none;"></div>
+              </li>
+            `;
+          })
+          .join("");
+
+        html += `
+          <div class="section">
+            <span class="pill">${artistName} — ${totalShows} show${totalShows === 1 ? "" : "s"}</span>
+            <ul class="song-stats-list">
+              ${songsList}
+            </ul>
+          </div>
+        `;
+      });
+
+      showDetailsEl.innerHTML = html;
+
+      const buttons = showDetailsEl.querySelectorAll(".song-stat-button");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.dataset.frequencyTarget;
+          const targetEl = document.getElementById(targetId);
+          const pct = btn.dataset.pct;
+          const showCount = btn.dataset.shows;
+          const totalShows = btn.dataset.totalShows;
+
+          const isVisible = targetEl.style.display === "block";
+
+          showDetailsEl
+            .querySelectorAll(".song-frequency")
+            .forEach((el) => {
+              el.style.display = "none";
+            });
+
+          if (!isVisible) {
+            targetEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
+            targetEl.style.display = "block";
+          }
+        });
+      });
+    }
+
+    // Wire up the Tour Song Stats button
+    const tourStatsTabEl = document.getElementById("tour-stats-tab");
+    if (tourStatsTabEl) {
+      tourStatsTabEl.addEventListener("click", () => {
+        renderTourStats();
+        tourStatsTabEl.classList.add("active");
+      });
+    }
 
     // --------- 5. Render artist section inside a show ---------
 
@@ -1265,89 +1234,130 @@ if (tourStatsTabEl) {
         .join("");
       const uniqueSongsText =
         artist.uniqueSongs && artist.uniqueSongs.length
-          ? artist.uniqueSongs.join(", ")
-          : "None";
+          ? artist.uniqueSongs.join(" · ")
+          : "No special tour notes listed here (yet).";
 
-      const albumChartHtml = renderAlbumChartFromStats(artist.albumStats);
+      const albumStatsHtml = artist.albumStats
+        ? Object.entries(artist.albumStats)
+            .map(
+              ([album, count]) =>
+                `<span class="album-pill"><strong>${album}</strong> <span>· ${count} song${
+                  count === 1 ? "" : "s"
+                }</span></span>`
+            )
+            .join("")
+        : "";
 
-      const container = document.getElementById("artist-content");
-      container.innerHTML = `
+      return `
         <div class="section">
-          <span class="pill">Setlist — ${artist.name}</span>
-          <ul>${songsList}</ul>
+          <div class="artist-name">${artist.name}</div>
+          <div class="meta">
+            On stage: ${artist.onstage || "time TBA"}
+          </div>
         </div>
+
         <div class="section">
-          <span class="pill">Exclusive / Notes</span>
-          <p>${uniqueSongsText}</p>
+          <div class="songs-title">Full set</div>
+          <ul class="song-list">
+            ${songsList}
+          </ul>
         </div>
+
+        <div class="section">
+          <div class="songs-title">Tour notes</div>
+          <div class="chips-row">
+            <span class="chip chip-accent">${uniqueSongsText}</span>
+          </div>
+        </div>
+
         ${
-          albumChartHtml
+          albumStatsHtml
             ? `<div class="section">
-                 <span class="pill">Songs by Album</span>
-                 ${albumChartHtml}
+                 <div class="songs-title">Albums in this set</div>
+                 <div class="album-stats">${albumStatsHtml}</div>
                </div>`
             : ""
         }
       `;
     }
 
-    // --------- 6. Render full show (header + tabs + artist content) ---------
+    // --------- 6. Render entire show (header + tabs + active artist) ---------
 
-    function renderShowDetails(show, artistIndexOverride) {
-      const defaultIndex =
-        typeof artistIndexOverride === "number"
-          ? artistIndexOverride
-          : show.defaultArtistIndex || 0;
-
+    function renderShowDetails(show) {
       const dateLabel = formatDate(show.date);
-      const headerMeta = [dateLabel, show.venue].filter(Boolean).join(" · ");
 
-      const tabsHtml = show.artists
-        .map(
-          (a, idx) => `
-        <button class="artist-tab" data-artist-index="${idx}">
-          <span>${a.name}</span>
-          <span class="artist-tab-time">${a.onstage}</span>
-        </button>`
-        )
-        .join("");
+      let artistTabsHtml = "";
+      show.artists.forEach((artist, idx) => {
+        const isDefault = idx === (show.defaultArtistIndex ?? 0);
+        artistTabsHtml += `
+          <button
+            class="artist-tab ${isDefault ? "active" : ""}"
+            data-artist-index="${idx}"
+          >
+            <span class="artist-name">${artist.name}</span>
+            <span class="artist-tab-time">${artist.onstage || "TBA"}</span>
+          </button>
+        `;
+      });
+
+      const initialArtistIndex = show.defaultArtistIndex ?? 0;
 
       showDetailsEl.innerHTML = `
-        <h2>${show.city}, ${show.state}</h2>
-        <p class="meta">${headerMeta}</p>
+        <div class="show-header">
+          <div class="show-location">${show.city}, ${show.state}</div>
+          <div class="show-venue">${show.venue}</div>
+          <div class="show-date">${dateLabel}</div>
+        </div>
 
         <div class="section">
-          <span class="pill">Artists</span>
-          <div class="artist-tabs">
-            ${tabsHtml}
+          <div class="songs-title">Lineup · tap to switch</div>
+          <div class="artist-tabs" id="artist-tabs">
+            ${artistTabsHtml}
           </div>
         </div>
 
-        <div id="artist-content"></div>
+        <div id="artist-details">
+          ${renderArtistSection(show, initialArtistIndex)}
+        </div>
       `;
 
-      const tabEls = Array.from(document.querySelectorAll(".artist-tab"));
+      const tabsContainer = showDetailsEl.querySelector("#artist-tabs");
+      const artistDetailsEl = showDetailsEl.querySelector("#artist-details");
 
-      tabEls.forEach((tabEl) => {
-        const idx = Number(tabEl.dataset.artistIndex);
-        tabEl.addEventListener("click", () => {
-          tabEls.forEach(t => t.classList.remove("active"));
-          tabEl.classList.add("active");
-          renderArtistSection(show, idx);
+      tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabsContainer.querySelectorAll(".artist-tab").forEach((t) =>
+            t.classList.remove("active")
+          );
+          tab.classList.add("active");
+
+          const idx = Number(tab.dataset.artistIndex);
+          artistDetailsEl.innerHTML = renderArtistSection(show, idx);
+
+          if (tourStatsTabEl) {
+            tourStatsTabEl.classList.remove("active");
+          }
         });
       });
-
-      const initial = Math.min(
-        Math.max(defaultIndex, 0),
-        show.artists.length - 1
-      );
-      if (tabEls[initial]) tabEls[initial].classList.add("active");
-      renderArtistSection(show, initial);
     }
 
-    // --------- 7. Add markers + tooltips ---------
+    // --------- 7. Initialize map & markers ---------
 
-        shows.forEach(show => {
+    const map = L.map("map", {
+      scrollWheelZoom: false,
+      zoomControl: true
+    }).setView([40, -100], 4);
+
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        maxZoom: 18,
+        attribution:
+          '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
+      }
+    ).addTo(map);
+
+    shows.forEach(show => {
       const marker = L.circleMarker([show.lat, show.lon], {
         radius: 13,
         weight: 3,
@@ -1366,11 +1376,9 @@ if (tourStatsTabEl) {
       );
 
       marker.on("click", () => {
-        // if the Tour Song Stats tab is active, turn it off
-        if (typeof tourStatsTabEl !== "undefined" && tourStatsTabEl) {
+        if (tourStatsTabEl) {
           tourStatsTabEl.classList.remove("active");
         }
-        // then show the details for this specific show
         renderShowDetails(show);
       });
     });
