@@ -96,6 +96,61 @@
       color: #b0b0b0;
     }
 
+	  .pill-button {
+  cursor: pointer;
+  background: #181824;
+  border: 1px solid #444;
+  padding: 4px 10px;
+}
+
+.pill-button:hover {
+  background: #222234;
+  color: #ffffff;
+}
+
+.pill-button.active {
+  background: #f13b56;
+  color: #050509;
+  border-color: #f13b56;
+}
+
+.song-stats-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.song-stat-item {
+  margin-bottom: 4px;
+}
+
+.song-stat-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: #f5f5f5;
+  text-align: left;
+  padding: 4px 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.song-stat-button:hover {
+  color: #f13b56;
+}
+
+.song-frequency {
+  font-size: 0.78rem;
+  color: #b0b0b0;
+  padding-left: 4px;
+  margin-top: 2px;
+}
+
     /* Scrollable setlist/card area */
     #show-details {
       flex: 1 1 auto;
@@ -304,13 +359,11 @@
       <!-- Example structure – keep whatever you already had -->
       <div class="meta">Hover: show date · Click: see all sets</div>
 
-	  <div class="section">
-        <span class="pill">Artists</span>
-      </div>
-
-      <div class="artist-tabs" id="artist-tabs">
-        <!-- tabs are injected by JS -->
-      </div>
+	<div class="section">
+  <button class="pill pill-button" id="tour-stats-tab">
+    Tour song stats
+  </button>
+</div>
 
     <div id="show-details">
         <!-- setlists injected by JS -->
@@ -1051,6 +1104,158 @@
 
     const showDetailsEl = document.getElementById("show-details");
 
+	  function normalizeSongTitle(title) {
+  if (!title) return "";
+  // remove anything in parentheses and trim
+  return title.replace(/\s*\(.*?\)\s*/g, "").trim();
+}
+
+// Build { artistName: { totalShows, songs: [...] } }
+function computeTourStats() {
+  const statsByArtist = {};
+  const showsByArtist = {};
+
+  shows.forEach((show, showIndex) => {
+    show.artists.forEach((artist) => {
+      const artistName = artist.name;
+      if (!statsByArtist[artistName]) statsByArtist[artistName] = {};
+      if (!showsByArtist[artistName]) showsByArtist[artistName] = new Set();
+      showsByArtist[artistName].add(showIndex);
+
+      const songsMap = statsByArtist[artistName];
+
+      artist.songs.forEach((songTitle) => {
+        const baseTitle = normalizeSongTitle(songTitle);
+        const key = baseTitle.toUpperCase(); // treat POP OUT / Pop Out as same
+
+        if (!songsMap[key]) {
+          songsMap[key] = {
+            label: baseTitle,
+            plays: 0,
+            showIndices: new Set()
+          };
+        }
+
+        const songStat = songsMap[key];
+        songStat.plays += 1;              // total plays
+        songStat.showIndices.add(showIndex); // which shows it appeared in
+      });
+    });
+  });
+
+  const result = {};
+  Object.entries(statsByArtist).forEach(([artistName, songsMap]) => {
+    const totalShows = showsByArtist[artistName]
+      ? showsByArtist[artistName].size
+      : 0;
+
+    const songs = Object.values(songsMap).map((info) => ({
+      songName: info.label,
+      plays: info.plays,
+      showCount: info.showIndices.size,
+      pctShows:
+        totalShows > 0 ? (info.showIndices.size / totalShows) * 100 : 0
+    }));
+
+    result[artistName] = {
+      totalShows,
+      songs
+    };
+  });
+
+  return result;
+}
+
+function renderTourStats() {
+  const stats = computeTourStats();
+
+  let html = `
+    <h2>Tour Song Stats</h2>
+    <p class="meta">Total plays and show frequency by artist</p>
+  `;
+
+  Object.entries(stats).forEach(([artistName, artistStats]) => {
+    const totalShows = artistStats.totalShows;
+    const sortedSongs = artistStats.songs
+      .slice()
+      .sort(
+        (a, b) =>
+          b.plays - a.plays || a.songName.localeCompare(b.songName)
+      );
+
+	  const tourStatsTabEl = document.getElementById("tour-stats-tab");
+if (tourStatsTabEl) {
+  tourStatsTabEl.addEventListener("click", () => {
+    renderTourStats();
+    tourStatsTabEl.classList.add("active");
+  });
+}
+
+
+    const songsList = sortedSongs
+      .map((song, idx) => {
+        const safeId = `freq-${artistName.replace(/[^a-z0-9]+/gi, "-")}-${idx}`;
+        const pctRounded = Math.round(song.pctShows);
+        const playsLabel = song.plays === 1 ? "play" : "plays";
+
+        return `
+          <li class="song-stat-item">
+            <button
+              class="song-stat-button"
+              data-frequency-target="${safeId}"
+              data-pct="${pctRounded}"
+              data-shows="${song.showCount}"
+              data-total-shows="${totalShows}"
+            >
+              <span class="song-name">${song.songName}</span>
+              <span class="song-plays">${song.plays} ${playsLabel}</span>
+            </button>
+            <div class="song-frequency" id="${safeId}" style="display:none;"></div>
+          </li>
+        `;
+      })
+      .join("");
+
+    html += `
+      <div class="section">
+        <span class="pill">${artistName} — ${totalShows} show${totalShows === 1 ? "" : "s"}</span>
+        <ul class="song-stats-list">
+          ${songsList}
+        </ul>
+      </div>
+    `;
+  });
+
+  showDetailsEl.innerHTML = html;
+
+  // clicking a song shows its % of shows
+  const buttons = showDetailsEl.querySelectorAll(".song-stat-button");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.dataset.frequencyTarget;
+      const targetEl = document.getElementById(targetId);
+      const pct = btn.dataset.pct;
+      const showCount = btn.dataset.shows;
+      const totalShows = btn.dataset.totalShows;
+
+      const isVisible = targetEl.style.display === "block";
+
+      // collapse all other open frequency rows
+      showDetailsEl
+        .querySelectorAll(".song-frequency")
+        .forEach((el) => {
+          el.style.display = "none";
+        });
+
+      if (!isVisible) {
+        targetEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
+        targetEl.style.display = "block";
+      }
+    });
+  });
+}
+
+
     // --------- 5. Render artist section inside a show ---------
 
     function renderArtistSection(show, artistIndex) {
@@ -1142,7 +1347,7 @@
 
     // --------- 7. Add markers + tooltips ---------
 
-    shows.forEach(show => {
+        shows.forEach(show => {
       const marker = L.circleMarker([show.lat, show.lon], {
         radius: 13,
         weight: 3,
@@ -1160,7 +1365,14 @@
         { direction: "top", opacity: 0.9 }
       );
 
-      marker.on("click", () => renderShowDetails(show));
+      marker.on("click", () => {
+        // if the Tour Song Stats tab is active, turn it off
+        if (typeof tourStatsTabEl !== "undefined" && tourStatsTabEl) {
+          tourStatsTabEl.classList.remove("active");
+        }
+        // then show the details for this specific show
+        renderShowDetails(show);
+      });
     });
 
     if (shows.length > 0) {
