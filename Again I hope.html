@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Antagonist 2.0 Interactive Tour Map</title>
 
-  <!-- Make it scale correctly on phones -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
@@ -54,11 +53,6 @@
       font-size: 1.25rem;
       letter-spacing: 0.03em;
       text-transform: uppercase;
-    }
-
-    header .subheading {
-      font-size: 0.85rem;
-      opacity: 0.8;
     }
 
     header .meta {
@@ -210,14 +204,11 @@
       gap: 6px;
       padding: 6px 14px;
       border-radius: 999px;
-
       border: none;
       background: #181824;
       color: #f5f5f5;
-
       font-size: 0.85rem;
       font-weight: 500;
-
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
       transform: translateY(0);
       transition:
@@ -301,15 +292,6 @@
       background: rgba(241, 59, 86, 0.14);
     }
 
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      margin-top: 8px;
-      padding-top: 4px;
-      border-top: 1px dashed rgba(255, 255, 255, 0.12);
-    }
-
     .album-stats {
       display: flex;
       flex-wrap: wrap;
@@ -333,30 +315,31 @@
       opacity: 0.85;
     }
 
-    /* New Tour Song Stats button styling */
+    /* Song Stats button */
     .pill-button {
       cursor: pointer;
-      background: #f13b56;        /* red box */
-      color: #000000;             /* black text */
+      background: #f13b56;
+      color: #000000;
       border: 2px solid #f13b56;
-      font-weight: 900;           /* very bold */
+      font-weight: 900;
       padding: 10px 16px;
-      border-radius: 6px;         /* small radius -> squarish */
+      border-radius: 6px;
       display: inline-block;
       font-size: 0.95rem;
     }
 
     .pill-button:hover {
-      background: #ff6d80;        /* lighter red on hover */
+      background: #ff6d80;
       border-color: #ff6d80;
     }
 
     .pill-button.active {
-      background: #000000;        /* invert when active */
+      background: #000000;
       color: #f13b56;
       border-color: #f13b56;
     }
 
+    /* Stats view */
     .song-stats-list {
       list-style: none;
       padding-left: 0;
@@ -400,8 +383,7 @@
   <div class="app-shell">
     <header>
       <div>
-        <h1>Antagonist 2.0 setlist explorer</h1>
-        <div class="subheading">Playboi Carti · Fall 2025</div>
+        <h1>Antagonist 2.0 Setlist Explorer</h1>
       </div>
 
       <div class="meta">
@@ -418,13 +400,13 @@
 
       <aside id="info-panel">
         <div class="section">
-          <button class="pill pill-button" id="tour-stats-tab">
-            Tour song stats
+          <button class="pill pill-button" id="song-stats-tab">
+            Song Stats
           </button>
         </div>
 
         <div id="show-details">
-          <!-- setlists + stats injected by JS -->
+          <!-- content injected by JS -->
         </div>
       </aside>
     </div>
@@ -1033,7 +1015,6 @@
               "R.I.P.",
               "Rockstar (unreleased)",
               "Timeless (The Weeknd cover)",
-              "ILoveUIHateU",
               "EVIL JORDAN",
               "ILoveUIHateU",
               "Die4Guy",
@@ -1078,7 +1059,6 @@
 
     function normalizeSongTitle(title) {
       if (!title) return "";
-      // remove anything in parentheses and trim
       return title.replace(/\s*\(.*?\)\s*/g, "").trim();
     }
 
@@ -1138,15 +1118,43 @@
       return result;
     }
 
-    function renderTourStats() {
+    function attachSongStatButtonHandlers(container) {
+      const buttons = container.querySelectorAll(".song-stat-button");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const pct = btn.dataset.pct;
+          const showCount = btn.dataset.shows;
+          const totalShows = btn.dataset.totalShows;
+          const freqEl =
+            btn.parentElement.querySelector(".song-frequency");
+          const isVisible = freqEl.style.display === "block";
+
+          container
+            .querySelectorAll(".song-frequency")
+            .forEach((el) => {
+              el.style.display = "none";
+            });
+
+          if (!isVisible) {
+            freqEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
+            freqEl.style.display = "block";
+          }
+        });
+      });
+    }
+
+    // Song Stats panel with artist tabs
+    function renderSongStatsPanel() {
       const stats = computeTourStats();
 
-      let html = `
-        <h2>Tour Song Stats</h2>
-        <p class="meta">Total plays and show frequency by artist</p>
-      `;
+      // Use artist order from first show
+      const artistOrder = shows[0].artists
+        .map((a) => a.name)
+        .filter((name) => stats[name]);
+      const defaultArtist = artistOrder[0];
 
-      Object.entries(stats).forEach(([artistName, artistStats]) => {
+      function buildArtistStatsHTML(artistName) {
+        const artistStats = stats[artistName];
         const totalShows = artistStats.totalShows;
         const sortedSongs = artistStats.songs
           .slice()
@@ -1156,16 +1164,13 @@
           );
 
         const songsList = sortedSongs
-          .map((song, idx) => {
-            const safeId = `freq-${artistName.replace(/[^a-z0-9]+/gi, "-")}-${idx}`;
+          .map((song) => {
             const pctRounded = Math.round(song.pctShows);
             const playsLabel = song.plays === 1 ? "play" : "plays";
-
             return `
               <li class="song-stat-item">
                 <button
                   class="song-stat-button"
-                  data-frequency-target="${safeId}"
                   data-pct="${pctRounded}"
                   data-shows="${song.showCount}"
                   data-total-shows="${totalShows}"
@@ -1173,60 +1178,75 @@
                   <span class="song-name">${song.songName}</span>
                   <span class="song-plays">${song.plays} ${playsLabel}</span>
                 </button>
-                <div class="song-frequency" id="${safeId}" style="display:none;"></div>
+                <div class="song-frequency" style="display:none;"></div>
               </li>
             `;
           })
           .join("");
 
-        html += `
+        return `
           <div class="section">
-            <span class="pill">${artistName} — ${totalShows} show${totalShows === 1 ? "" : "s"}</span>
+            <div class="show-header">
+              <div class="show-location">Song stats — ${artistName}</div>
+              <div class="show-date meta">
+                Across ${totalShows} show${totalShows === 1 ? "" : "s"}
+              </div>
+            </div>
             <ul class="song-stats-list">
               ${songsList}
             </ul>
           </div>
         `;
-      });
+      }
 
-      showDetailsEl.innerHTML = html;
+      const artistTabsHtml = artistOrder
+        .map(
+          (name) => `
+          <button
+            class="artist-tab ${
+              name === defaultArtist ? "active" : ""
+            }"
+            data-artist-name="${name}"
+          >
+            <span class="artist-name">${name}</span>
+            <span class="artist-tab-time">Stats</span>
+          </button>
+        `
+        )
+        .join("");
 
-      const buttons = showDetailsEl.querySelectorAll(".song-stat-button");
-      buttons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const targetId = btn.dataset.frequencyTarget;
-          const targetEl = document.getElementById(targetId);
-          const pct = btn.dataset.pct;
-          const showCount = btn.dataset.shows;
-          const totalShows = btn.dataset.totalShows;
+      showDetailsEl.innerHTML = `
+        <div class="section">
+          <div class="songs-title">Lineup · tap an artist</div>
+          <div class="artist-tabs" id="stats-artist-tabs">
+            ${artistTabsHtml}
+          </div>
+        </div>
+        <div id="artist-stats-details">
+          ${buildArtistStatsHTML(defaultArtist)}
+        </div>
+      `;
 
-          const isVisible = targetEl.style.display === "block";
+      const tabsContainer = document.getElementById("stats-artist-tabs");
+      const detailsEl = document.getElementById("artist-stats-details");
 
-          showDetailsEl
-            .querySelectorAll(".song-frequency")
-            .forEach((el) => {
-              el.style.display = "none";
-            });
+      tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabsContainer
+            .querySelectorAll(".artist-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
 
-          if (!isVisible) {
-            targetEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
-            targetEl.style.display = "block";
-          }
+          const artistName = tab.dataset.artistName;
+          detailsEl.innerHTML = buildArtistStatsHTML(artistName);
+          attachSongStatButtonHandlers(detailsEl);
         });
       });
+
+      attachSongStatButtonHandlers(detailsEl);
     }
 
-    // Wire up the Tour Song Stats button
-    const tourStatsTabEl = document.getElementById("tour-stats-tab");
-    if (tourStatsTabEl) {
-      tourStatsTabEl.addEventListener("click", () => {
-        renderTourStats();
-        tourStatsTabEl.classList.add("active");
-      });
-    }
-
-    // --------- 5. Render artist section inside a show ---------
-
+    // --------- 3. Per-show rendering ---------
     function renderArtistSection(show, artistIndex) {
       const artist = show.artists[artistIndex];
       const songsList = artist.songs
@@ -1281,8 +1301,6 @@
       `;
     }
 
-    // --------- 6. Render entire show (header + tabs + active artist) ---------
-
     function renderShowDetails(show) {
       const dateLabel = formatDate(show.date);
 
@@ -1326,23 +1344,31 @@
 
       tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
         tab.addEventListener("click", () => {
-          tabsContainer.querySelectorAll(".artist-tab").forEach((t) =>
-            t.classList.remove("active")
-          );
+          tabsContainer
+            .querySelectorAll(".artist-tab")
+            .forEach((t) => t.classList.remove("active"));
           tab.classList.add("active");
 
           const idx = Number(tab.dataset.artistIndex);
           artistDetailsEl.innerHTML = renderArtistSection(show, idx);
 
-          if (tourStatsTabEl) {
-            tourStatsTabEl.classList.remove("active");
+          if (songStatsTabEl) {
+            songStatsTabEl.classList.remove("active");
           }
         });
       });
     }
 
-    // --------- 7. Initialize map & markers ---------
+    // --------- 4. Wire up Song Stats button ---------
+    const songStatsTabEl = document.getElementById("song-stats-tab");
+    if (songStatsTabEl) {
+      songStatsTabEl.addEventListener("click", () => {
+        renderSongStatsPanel();
+        songStatsTabEl.classList.add("active");
+      });
+    }
 
+    // --------- 5. Map & markers ---------
     const map = L.map("map", {
       scrollWheelZoom: false,
       zoomControl: true
@@ -1357,7 +1383,7 @@
       }
     ).addTo(map);
 
-    shows.forEach(show => {
+    shows.forEach((show) => {
       const marker = L.circleMarker([show.lat, show.lon], {
         radius: 13,
         weight: 3,
@@ -1376,15 +1402,15 @@
       );
 
       marker.on("click", () => {
-        if (tourStatsTabEl) {
-          tourStatsTabEl.classList.remove("active");
+        if (songStatsTabEl) {
+          songStatsTabEl.classList.remove("active");
         }
         renderShowDetails(show);
       });
     });
 
     if (shows.length > 0) {
-      const bounds = L.latLngBounds(shows.map(s => [s.lat, s.lon]));
+      const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
       map.fitBounds(bounds.pad(0.2));
     }
   </script>
