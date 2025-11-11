@@ -3488,61 +3488,8 @@ function renderSongStatsPanel() {
 }
 
     // --------- 3. Per-show rendering ---------
-    function renderArtistSection(show, artistIndex) {
-      const artist = show.artists[artistIndex];
-      const songsList = artist.songs
-        .map((s, i) => `<li>${i + 1}. ${s}</li>`)
-        .join("");
-      const uniqueSongsText =
-        artist.uniqueSongs && artist.uniqueSongs.length
-          ? artist.uniqueSongs.join(" · ")
-          : "No special tour notes listed here (yet).";
-
-      const albumStatsHtml = artist.albumStats
-        ? Object.entries(artist.albumStats)
-            .map(
-              ([album, count]) =>
-                `<span class="album-pill"><strong>${album}</strong> <span>· ${count} song${
-                  count === 1 ? "" : "s"
-                }</span></span>`
-            )
-            .join("")
-        : "";
-
-      return `
-        <div class="section">
-          <div class="artist-name">${artist.name}</div>
-          <div class="meta">
-            On stage: ${artist.onstage || "time TBA"}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="songs-title">Full set</div>
-          <ul class="song-list">
-            ${songsList}
-          </ul>
-        </div>
-
-        <div class="section">
-          <div class="songs-title">Tour notes</div>
-          <div class="chips-row">
-            <span class="chip chip-accent">${uniqueSongsText}</span>
-          </div>
-        </div>
-
-        ${
-          albumStatsHtml
-            ? `<div class="section">
-                 <div class="songs-title">Albums in this set</div>
-                 <div class="album-stats">${albumStatsHtml}</div>
-               </div>`
-            : ""
-        }
-      `;
-    }
 function renderShowDetails(show) {
-  // Graceful handling for incomplete or missing show data
+  // Handle missing data gracefully
   if (!show || !show.artists) {
     showDetailsEl.innerHTML = `
       <div class="section">
@@ -3552,17 +3499,12 @@ function renderShowDetails(show) {
           <div class="show-date meta">${formatDate(show.date)}</div>
         </div>
         <p class="meta">Setlist unavailable for this show.</p>
-      </div>
-    `;
+      </div>`;
     return;
   }
 
-  // Filter artists that actually have songs
-  const validArtists = show.artists.filter(
-    (artist) => artist.songs && artist.songs.length > 0
-  );
-
-  // Handle shows with no confirmed performances
+  // Filter valid artists (those with songs)
+  const validArtists = show.artists.filter(a => a.songs && a.songs.length > 0);
   if (validArtists.length === 0) {
     showDetailsEl.innerHTML = `
       <div class="section">
@@ -3572,22 +3514,39 @@ function renderShowDetails(show) {
           <div class="show-date meta">${formatDate(show.date)}</div>
         </div>
         <p class="meta">This show did not have any confirmed performances.</p>
-      </div>
-    `;
+      </div>`;
     return;
   }
 
-  const defaultArtist =
-    validArtists[show.defaultArtistIndex] || validArtists[0];
+  const defaultArtist = validArtists[show.defaultArtistIndex] || validArtists[0];
 
-  // Build HTML for an artist's setlist
+  // Build setlist view
   function buildArtistHTML(artist) {
-    const songItems = artist.songs
-      .map((song) => `<li class="song-item">${song}</li>`)
+    const songList = artist.songs
+      .map((song, i) => `<li>${i + 1}. ${song}</li>`)
       .join("");
 
-    const notesSection = artist.notes
-      ? `<div class="meta">${artist.notes}</div>`
+    const notes = artist.notes
+      ? `<div class="section">
+          <h3 class="songs-title">Tour Notes</h3>
+          <p class="meta">${artist.notes}</p>
+        </div>`
+      : `<div class="section">
+          <h3 class="songs-title">Tour Notes</h3>
+          <p class="meta">No special tour notes listed here (yet).</p>
+        </div>`;
+
+    const albums = artist.albumStats
+      ? Object.entries(artist.albumStats)
+          .map(([album, count]) => `<span class="album-pill"><strong>${album}</strong> · ${count} ${count === 1 ? "song" : "songs"}</span>`)
+          .join("")
+      : "";
+
+    const albumSection = albums
+      ? `<div class="section">
+          <h3 class="songs-title">Albums in This Set</h3>
+          <div class="album-stats">${albums}</div>
+        </div>`
       : "";
 
     return `
@@ -3602,32 +3561,36 @@ function renderShowDetails(show) {
             }
           </div>
         </div>
-        <ul class="song-list">${songItems}</ul>
-        ${notesSection}
+
+        <h3 class="songs-title">Full Set</h3>
+        <ul class="song-list">${songList}</ul>
       </div>
+
+      ${notes}
+      ${albumSection}
     `;
   }
 
-  // Artist tab buttons
+  // Artist tabs (switch between artists)
   const artistTabs = validArtists
     .map(
-      (artist, index) => `
-      <button
-        class="artist-tab ${artist === defaultArtist ? "active" : ""}"
-        data-artist-index="${index}"
-      >
+      (artist, i) => `
+      <button class="artist-tab ${artist === defaultArtist ? "active" : ""}" data-artist-index="${i}">
         <span class="artist-name">${artist.name}</span>
         <span class="artist-tab-time">${
-          artist.onstage && artist.onstage !== "N/A"
-            ? artist.onstage
-            : "N/A"
+          artist.onstage && artist.onstage !== "N/A" ? artist.onstage : "N/A"
         }</span>
-      </button>
-    `
+      </button>`
     )
     .join("");
 
-  // Render full show view
+  // Vegas note (custom)
+  const specialNote =
+    show.city === "Las Vegas"
+      ? `<p class="meta" style="margin-top:6px;">Note: Ken Carson and Destroy Lonely did not perform at this stop due to scheduling/radius restrictions.</p>`
+      : "";
+
+  // Render
   showDetailsEl.innerHTML = `
     <div class="section">
       <div class="show-header">
@@ -3635,31 +3598,29 @@ function renderShowDetails(show) {
         <div class="show-venue">${show.venue}</div>
         <div class="show-date meta">${formatDate(show.date)}</div>
       </div>
-      <div class="artist-tabs" id="artist-tabs">
-        ${artistTabs}
-      </div>
+
+      <div class="artist-tabs" id="artist-tabs">${artistTabs}</div>
+      ${specialNote}
     </div>
+
     <div id="artist-details">
       ${buildArtistHTML(defaultArtist)}
     </div>
   `;
 
-  // Tab interaction
-  const tabsContainer = document.getElementById("artist-tabs");
-  const detailsEl = document.getElementById("artist-details");
-
-  tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
+  // Tab switching
+  const tabs = document.querySelectorAll(".artist-tab");
+  const details = document.getElementById("artist-details");
+  tabs.forEach(tab => {
     tab.addEventListener("click", () => {
-      tabsContainer
-        .querySelectorAll(".artist-tab")
-        .forEach((t) => t.classList.remove("active"));
+      tabs.forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
-
-      const index = parseInt(tab.dataset.artistIndex, 10);
-      detailsEl.innerHTML = buildArtistHTML(validArtists[index]);
+      const i = parseInt(tab.dataset.artistIndex, 10);
+      details.innerHTML = buildArtistHTML(validArtists[i]);
     });
   });
 }
+
     // --------- 4. Wire up Song Stats button ---------
     const songStatsTabEl = document.getElementById("song-stats-tab");
     if (songStatsTabEl) {
