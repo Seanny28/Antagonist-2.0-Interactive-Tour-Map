@@ -3570,23 +3570,36 @@ function renderShowList() {
     </div>
   `;
 
-  // Add interactivity
-  document.querySelectorAll(".show-list-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      const showIndex = parseInt(item.dataset.showIndex);
-      const clickedShow = shows[showIndex];
-      const showDate = new Date(clickedShow.date);
-      const today = new Date();
+  listEl.querySelectorAll(".show-list-item").forEach((item) => {
+  item.addEventListener("click", () => {
+    const idx = parseInt(item.dataset.showIndex, 10);
+    const clickedShow = sorted[idx];
 
-      // Only open setlist if the show already happened
-      if (showDate <= today) {
-        renderShowDetails(clickedShow);
-      } else {
-        alert("This show has not happened yet!");
-      }
-    });
+    // Only allow navigation for past shows
+    const showDate = new Date(clickedShow.date + "T00:00:00");
+    const today = new Date();
+
+    if (showDate <= today) {
+      // Zoom / pan map to this show's city
+      map.flyTo(
+        [clickedShow.lat, clickedShow.lon],
+        Math.max(map.getZoom(), DETAIL_ZOOM),
+        { duration: 0.7 }
+      );
+
+      renderShowDetails(clickedShow);
+
+      // Make sure SONG STATS tab is active when viewing details
+      const songStatsTabBtn = document.getElementById("song-stats-tab");
+      const showListTabBtn = document.getElementById("show-list-tab");
+      songStatsTabBtn.classList.add("active");
+      showListTabBtn.classList.remove("active");
+    } else {
+      alert("This show has not happened yet!");
+    }
   });
-}
+});
+
 
 // --------- 4. TAB SWITCH LOGIC ---------
 
@@ -3748,51 +3761,61 @@ function renderShowDetails(show) {
       });
     }
 
-    // --------- 5. Map & markers ---------
-    const map = L.map("map", {
-      scrollWheelZoom: true,
-      zoomControl: true
-    }).setView([40, -100], 4);
+  // --------- 5. Map & markers ---------
+const map = L.map("map", {
+  scrollWheelZoom: true,
+  zoomControl: true
+}).setView([40, -100], 4);
 
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      {
-        maxZoom: 18,
-        attribution:
-          '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
-      }
-    ).addTo(map);
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {
+    maxZoom: 18,
+    attribution:
+      '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
+  }
+).addTo(map);
 
-    shows.forEach((show) => {
-      const marker = L.circleMarker([show.lat, show.lon], {
-        radius: 13,
-        weight: 3,
-        color: "#f13b56",
-        fillColor: "#f13b56",
-        fillOpacity: 0.85
-      }).addTo(map);
+// zoom level to use when focusing on a single show
+const DETAIL_ZOOM = 6;
 
-      const dateLabel = formatDate(show.date);
+shows.forEach((show) => {
+  const marker = L.circleMarker([show.lat, show.lon], {
+    radius: 13,
+    weight: 3,
+    color: "#f13b56",
+    fillColor: "#f13b56",
+    fillOpacity: 0.85
+  }).addTo(map);
 
-      marker.bindTooltip(
-        `<strong>${show.city}, ${show.state}</strong><br/>
-         ${dateLabel}<br/>
-         <em>Click to view all sets</em>`,
-        { direction: "top", opacity: 0.9 }
-      );
+  const dateLabel = formatDate(show.date);
 
-      marker.on("click", () => {
-        if (songStatsTabEl) {
-          songStatsTabEl.classList.remove("active");
-        }
-        renderShowDetails(show);
-      });
-    });
+  marker.bindTooltip(
+    `<strong>${show.city}, ${show.state}</strong><br/>
+     ${dateLabel}<br/>
+     <em>Click to view all sets</em>`,
+    { direction: "top", opacity: 0.9 }
+  );
 
-    if (shows.length > 0) {
-      const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
-      map.fitBounds(bounds.pad(0.2));
+  marker.on("click", () => {
+    // smooth zoom/pan to this city
+    map.flyTo(
+      [show.lat, show.lon],
+      Math.max(map.getZoom(), DETAIL_ZOOM),
+      { duration: 0.7 }
+    );
+
+    if (songStatsTabEl) {
+      // make sure Song Stats tab is active if you’re using tabs
+      songStatsTabEl.classList.add("active");
+      if (showListTabEl) showListTabEl.classList.remove("active");
     }
-  </script>
-</body>
-</html>
+
+    renderShowDetails(show);
+  });
+});
+
+if (shows.length > 0) {
+  const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
+  map.fitBounds(bounds.pad(0.2));
+}
