@@ -3570,35 +3570,41 @@ function renderShowList() {
     </div>
   `;
 
+  // ✅ Get the list element from the DOM
+  const listEl = showDetailsEl.querySelector(".show-list");
+
+  // ✅ Use sortedShows, not "sorted"
   listEl.querySelectorAll(".show-list-item").forEach((item) => {
-  item.addEventListener("click", () => {
-    const idx = parseInt(item.dataset.showIndex, 10);
-    const clickedShow = sorted[idx];
+    item.addEventListener("click", () => {
+      const idx = parseInt(item.dataset.showIndex, 10);
+      const clickedShow = sortedShows[idx];
 
-    // Only allow navigation for past shows
-    const showDate = new Date(clickedShow.date + "T00:00:00");
-    const today = new Date();
+      // Only allow navigation for past shows
+      const showDate = new Date(clickedShow.date + "T00:00:00");
+      const today = new Date();
 
-    if (showDate <= today) {
-      // Zoom / pan map to this show's city
-      map.flyTo(
-        [clickedShow.lat, clickedShow.lon],
-        Math.max(map.getZoom(), DETAIL_ZOOM),
-        { duration: 0.7 }
-      );
+      if (showDate <= today) {
+        // Zoom / pan map to this show's city
+        map.flyTo(
+          [clickedShow.lat, clickedShow.lon],
+          Math.max(map.getZoom(), DETAIL_ZOOM),
+          { duration: 0.7 }
+        );
 
-      renderShowDetails(clickedShow);
+        renderShowDetails(clickedShow);
 
-      // Make sure SONG STATS tab is active when viewing details
-      const songStatsTabBtn = document.getElementById("song-stats-tab");
-      const showListTabBtn = document.getElementById("show-list-tab");
-      songStatsTabBtn.classList.add("active");
-      showListTabBtn.classList.remove("active");
-    } else {
-      alert("This show has not happened yet!");
-    }
+        // Make sure SONG STATS tab is active when viewing details
+        const songStatsTabBtn = document.getElementById("song-stats-tab");
+        const showListTabBtn = document.getElementById("show-list-tab");
+        songStatsTabBtn.classList.add("active");
+        showListTabBtn.classList.remove("active");
+      } else {
+        alert("This show has not happened yet!");
+      }
+    });
   });
-});
+}
+
 
 
 // --------- 4. TAB SWITCH LOGIC ---------
