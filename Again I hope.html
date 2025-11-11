@@ -338,6 +338,48 @@
       color: #f13b56;
       border-color: #f13b56;
     }
+.tab-row {
+  display: flex;
+  gap: 8px;
+}
+
+.show-list {
+  list-style: none;
+  margin-top: 8px;
+  padding-left: 0;
+}
+
+.show-list-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.show-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.show-list-date {
+  font-size: 0.85rem;
+  color: #f13b56;
+  font-weight: 600;
+}
+
+.show-list-venue {
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+
+.show-list-city {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.show-list-item.future .show-list-date {
+  color: #aaa;
+}
 
     /* Stats view */
     .song-stats-list {
@@ -399,11 +441,15 @@
       <div id="map"></div>
 
       <aside id="info-panel">
-        <div class="section">
-          <button class="pill pill-button" id="song-stats-tab">
-            Song Stats
-          </button>
-        </div>
+        <div class="section tab-row">
+  <button class="pill pill-button active" id="song-stats-tab">
+    Song Stats
+  </button>
+  <button class="pill pill-button" id="show-list-tab">
+    Show List
+  </button>
+</div>
+
 
         <div id="show-details">
           <!-- content injected by JS -->
@@ -3486,6 +3532,78 @@ function renderSongStatsPanel() {
 
   attachSongStatButtonHandlers(detailsEl);
 }
+// --------- 3. SHOW LIST TAB ---------
+
+function renderShowList() {
+  // Sort shows by date
+  const sortedShows = [...shows].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  const today = new Date();
+
+  // Build HTML
+  const showListHTML = sortedShows
+    .map((show, index) => {
+      const showDate = new Date(show.date);
+      const isFuture = showDate > today;
+
+      return `
+        <li class="show-list-item ${isFuture ? "future" : "past"}" data-show-index="${index}">
+          <div class="show-list-date">${formatDate(show.date)}</div>
+          <div class="show-list-venue">${show.venue}</div>
+          <div class="show-list-city">${show.city.toUpperCase()}, ${show.state}</div>
+        </li>
+      `;
+    })
+    .join("");
+
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="show-header">
+        <div class="show-location">Antagonist 2.0 Tour</div>
+        <div class="show-date meta">All tour dates</div>
+      </div>
+      <ul class="show-list">
+        ${showListHTML}
+      </ul>
+    </div>
+  `;
+
+  // Add interactivity
+  document.querySelectorAll(".show-list-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const showIndex = parseInt(item.dataset.showIndex);
+      const clickedShow = shows[showIndex];
+      const showDate = new Date(clickedShow.date);
+      const today = new Date();
+
+      // Only open setlist if the show already happened
+      if (showDate <= today) {
+        renderShowDetails(clickedShow);
+      } else {
+        alert("This show has not happened yet!");
+      }
+    });
+  });
+}
+
+// --------- 4. TAB SWITCH LOGIC ---------
+
+const songStatsTab = document.getElementById("song-stats-tab");
+const showListTab = document.getElementById("show-list-tab");
+
+songStatsTab.addEventListener("click", () => {
+  songStatsTab.classList.add("active");
+  showListTab.classList.remove("active");
+  renderSongStatsPanel();
+});
+
+showListTab.addEventListener("click", () => {
+  showListTab.classList.add("active");
+  songStatsTab.classList.remove("active");
+  renderShowList();
+});
 
     // --------- 3. Per-show rendering ---------
 function renderShowDetails(show) {
