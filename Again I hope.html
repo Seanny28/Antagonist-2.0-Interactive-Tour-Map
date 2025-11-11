@@ -3541,65 +3541,125 @@ function renderSongStatsPanel() {
         }
       `;
     }
+function renderShowDetails(show) {
+  // Graceful handling for incomplete or missing show data
+  if (!show || !show.artists) {
+    showDetailsEl.innerHTML = `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">${show.city || "Unknown"}, ${show.state || ""}</div>
+          <div class="show-venue">${show.venue || ""}</div>
+          <div class="show-date meta">${formatDate(show.date)}</div>
+        </div>
+        <p class="meta">Setlist unavailable for this show.</p>
+      </div>
+    `;
+    return;
+  }
 
-    function renderShowDetails(show) {
-      const dateLabel = formatDate(show.date);
+  // Filter artists that actually have songs
+  const validArtists = show.artists.filter(
+    (artist) => artist.songs && artist.songs.length > 0
+  );
 
-      let artistTabsHtml = "";
-      show.artists.forEach((artist, idx) => {
-        const isDefault = idx === (show.defaultArtistIndex ?? 0);
-        artistTabsHtml += `
-          <button
-            class="artist-tab ${isDefault ? "active" : ""}"
-            data-artist-index="${idx}"
-          >
-            <span class="artist-name">${artist.name}</span>
-            <span class="artist-tab-time">${artist.onstage || "TBA"}</span>
-          </button>
-        `;
-      });
-
-      const initialArtistIndex = show.defaultArtistIndex ?? 0;
-
-      showDetailsEl.innerHTML = `
+  // Handle shows with no confirmed performances
+  if (validArtists.length === 0) {
+    showDetailsEl.innerHTML = `
+      <div class="section">
         <div class="show-header">
           <div class="show-location">${show.city}, ${show.state}</div>
           <div class="show-venue">${show.venue}</div>
-          <div class="show-date">${dateLabel}</div>
+          <div class="show-date meta">${formatDate(show.date)}</div>
         </div>
+        <p class="meta">This show did not have any confirmed performances.</p>
+      </div>
+    `;
+    return;
+  }
 
-        <div class="section">
-          <div class="songs-title">Lineup · tap to switch</div>
-          <div class="artist-tabs" id="artist-tabs">
-            ${artistTabsHtml}
+  const defaultArtist =
+    validArtists[show.defaultArtistIndex] || validArtists[0];
+
+  // Build HTML for an artist's setlist
+  function buildArtistHTML(artist) {
+    const songItems = artist.songs
+      .map((song) => `<li class="song-item">${song}</li>`)
+      .join("");
+
+    const notesSection = artist.notes
+      ? `<div class="meta">${artist.notes}</div>`
+      : "";
+
+    return `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">${artist.name}</div>
+          <div class="show-date meta">
+            ${
+              artist.onstage && artist.onstage !== "N/A"
+                ? `On stage: ${artist.onstage}`
+                : "Time not available"
+            }
           </div>
         </div>
+        <ul class="song-list">${songItems}</ul>
+        ${notesSection}
+      </div>
+    `;
+  }
 
-        <div id="artist-details">
-          ${renderArtistSection(show, initialArtistIndex)}
-        </div>
-      `;
+  // Artist tab buttons
+  const artistTabs = validArtists
+    .map(
+      (artist, index) => `
+      <button
+        class="artist-tab ${artist === defaultArtist ? "active" : ""}"
+        data-artist-index="${index}"
+      >
+        <span class="artist-name">${artist.name}</span>
+        <span class="artist-tab-time">${
+          artist.onstage && artist.onstage !== "N/A"
+            ? artist.onstage
+            : "N/A"
+        }</span>
+      </button>
+    `
+    )
+    .join("");
 
-      const tabsContainer = showDetailsEl.querySelector("#artist-tabs");
-      const artistDetailsEl = showDetailsEl.querySelector("#artist-details");
+  // Render full show view
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="show-header">
+        <div class="show-location">${show.city}, ${show.state}</div>
+        <div class="show-venue">${show.venue}</div>
+        <div class="show-date meta">${formatDate(show.date)}</div>
+      </div>
+      <div class="artist-tabs" id="artist-tabs">
+        ${artistTabs}
+      </div>
+    </div>
+    <div id="artist-details">
+      ${buildArtistHTML(defaultArtist)}
+    </div>
+  `;
 
-      tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
-        tab.addEventListener("click", () => {
-          tabsContainer
-            .querySelectorAll(".artist-tab")
-            .forEach((t) => t.classList.remove("active"));
-          tab.classList.add("active");
+  // Tab interaction
+  const tabsContainer = document.getElementById("artist-tabs");
+  const detailsEl = document.getElementById("artist-details");
 
-          const idx = Number(tab.dataset.artistIndex);
-          artistDetailsEl.innerHTML = renderArtistSection(show, idx);
+  tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabsContainer
+        .querySelectorAll(".artist-tab")
+        .forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
 
-          if (songStatsTabEl) {
-            songStatsTabEl.classList.remove("active");
-          }
-        });
-      });
-    }
-
+      const index = parseInt(tab.dataset.artistIndex, 10);
+      detailsEl.innerHTML = buildArtistHTML(validArtists[index]);
+    });
+  });
+}
     // --------- 4. Wire up Song Stats button ---------
     const songStatsTabEl = document.getElementById("song-stats-tab");
     if (songStatsTabEl) {
