@@ -2,469 +2,211 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Antagonist 2.0 Interactive Tour Map</title>
+  <title>Tour Map + Sets</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS/JS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin=""
   />
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Inter", sans-serif;
-    }
-
-    body {
-      background: radial-gradient(circle at top left, #2b1235 0, #050509 48%);
-      color: #f5f5f5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .app-shell {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      padding: 16px 18px 10px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 6px 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: radial-gradient(circle at top left, #3b143f 0, #050509 55%);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    header h1 {
-      font-size: 1.25rem;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
-    header .meta {
-      margin-left: auto;
-      font-size: 0.8rem;
-      opacity: 0.75;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    header .meta span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #f13b56;
-      box-shadow: 0 0 6px rgba(241, 59, 86, 0.9);
-    }
-
-    .layout {
-      flex: 1;
-      display: flex;
-      min-height: 0;
-      max-height: calc(100vh - 64px);
-    }
-
-    #map {
-      flex: 1.3;
-      min-height: 260px;
-      background: #050509;
-    }
-
-    #info-panel {
-      flex: 1;
-      max-width: 480px;
-      min-width: 0;
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
-      background: radial-gradient(circle at top right, #321637 0, #06040a 60%);
-      display: flex;
-      flex-direction: column;
-      padding: 14px 14px 10px;
-      gap: 10px;
-    }
-
-    @media (max-width: 880px) {
-      .layout {
-        flex-direction: column;
-        max-height: none;
-      }
-
-      #map {
-        flex: none;
-        height: 52vh;
-        max-height: 430px;
-      }
-
-      #info-panel {
-        max-width: none;
-        border-left: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-      }
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(10, 8, 18, 0.9);
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      opacity: 0.9;
-    }
-
-    .section {
-      margin-bottom: 10px;
-    }
-
-    #show-details {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    #show-details::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    #show-details::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.18);
-      border-radius: 999px;
-    }
-
-    h2 {
-      font-size: 1.1rem;
-      margin-bottom: 4px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
-    .meta {
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
-
-    .show-header {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 6px;
-    }
-
-    .show-location {
-      font-size: 0.92rem;
-      font-weight: 500;
-    }
-
-    .show-venue {
-      font-size: 0.82rem;
-      opacity: 0.9;
-    }
-
-    .show-date {
-      font-size: 0.82rem;
-      opacity: 0.9;
-    }
-
-    .artist-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 6px 0 8px;
-    }
-
-    .artist-tab {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: none;
-      background: #181824;
-      color: #f5f5f5;
-      font-size: 0.85rem;
-      font-weight: 500;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
-      transform: translateY(0);
-      transition:
-        background 0.15s ease,
-        color 0.15s ease,
-        box-shadow 0.15s ease,
-        transform 0.1s ease;
-    }
-
-    .artist-tab:hover {
-      background: #222234;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.65);
-      transform: translateY(-1px);
-    }
-
-    .artist-tab-time {
-      font-size: 0.78rem;
-      color: #c6c6c6;
-      opacity: 0.9;
-    }
-
-    .artist-tab.active {
-      background: #f13b56;
-      color: #050509;
-      box-shadow: 0 3px 10px rgba(241, 59, 86, 0.8);
-    }
-
-    .artist-tab.active .artist-tab-time {
-      color: #050509;
-      opacity: 0.95;
-    }
-
-    .artist-name {
-      font-weight: 600;
-    }
-
-    .songs-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      opacity: 0.85;
-      margin-bottom: 4px;
-    }
-
-    .song-list {
-      list-style: none;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      padding-left: 0;
-      margin: 0;
-    }
-
-    .song-list li {
-      padding: 2px 0;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-    }
-
-    .song-list li:last-child {
-      border-bottom: none;
-    }
-
-    .chips-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 6px;
-    }
-
-    .chip {
-      font-size: 0.74rem;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(10, 8, 18, 0.9);
-      opacity: 0.9;
-    }
-
-    .chip-accent {
-      border-color: rgba(241, 59, 86, 0.9);
-      color: #fddfe4;
-      background: rgba(241, 59, 86, 0.14);
-    }
-
-    .album-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 4px;
-      font-size: 0.78rem;
-    }
-
-    .album-pill {
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(10, 8, 18, 0.9);
-    }
-
-    .album-pill strong {
-      font-weight: 600;
-    }
-
-    .album-pill span {
-      opacity: 0.85;
-    }
-
-    /* Song Stats button */
-    .pill-button {
-      cursor: pointer;
-      background: #f13b56;
-      color: #000000;
-      border: 2px solid #f13b56;
-      font-weight: 900;
-      padding: 10px 16px;
-      border-radius: 6px;
-      display: inline-block;
-      font-size: 0.95rem;
-    }
-
-    .pill-button:hover {
-      background: #ff6d80;
-      border-color: #ff6d80;
-    }
-
-    .pill-button.active {
-      background: #000000;
-      color: #f13b56;
-      border-color: #f13b56;
-    }
-.tab-row {
-  display: flex;
-  gap: 8px;
-}
-
-.show-list {
-  list-style: none;
-  margin-top: 8px;
-  padding-left: 0;
-}
-
-.show-list-item {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.show-list-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.show-list-date {
-  font-size: 0.85rem;
-  color: #f13b56;
-  font-weight: 600;
-}
-
-.show-list-venue {
-  font-size: 0.88rem;
-  opacity: 0.9;
-}
-
-.show-list-city {
-  font-size: 0.78rem;
-  opacity: 0.75;
-  text-transform: uppercase;
-}
-
-.show-list-item.future .show-list-date {
-  color: #aaa;
-}
-
-    /* Stats view */
-    .song-stats-list {
-      list-style: none;
-      padding-left: 0;
-      margin-top: 6px;
-      font-size: 0.85rem;
-    }
-
-    .song-stat-item {
-      margin-bottom: 4px;
-    }
-
-    .song-stat-button {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      background: transparent;
-      border: none;
-      color: #f5f5f5;
-      text-align: left;
-      padding: 4px 0;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .song-stat-button:hover {
-      color: #f13b56;
-    }
-
-    .song-frequency {
-      font-size: 0.78rem;
-      color: #b0b0b0;
-      padding-left: 4px;
-      margin-top: 2px;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="app-shell">
-    <header>
-      <div>
-        <h1>Antagonist 2.0 Setlist Explorer</h1>
-      </div>
-
-      <div class="meta">
-        <span>
-          <span class="dot"></span>
-          Live tour data · fan compiled
-        </span>
-        <span>Map: tap a city · Panel: tap an artist</span>
-      </div>
-    </header>
-
-    <div class="layout">
-      <div id="map"></div>
-
-      <aside id="info-panel">
-        <div class="section tab-row">
-  <button class="pill pill-button active" id="song-stats-tab">
-    Song Stats
-  </button>
-  <button class="pill pill-button" id="show-list-tab">
-    Show List
-  </button>
-</div>
-
-
-        <div id="show-details">
-          <!-- content injected by JS -->
-        </div>
-      </aside>
-    </div>
-  </div>
-
-  <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     crossorigin=""
+    defer
   ></script>
 
+  <style>
+    :root {
+      --bg: #0c0c0f;
+      --panel: #111117;
+      --text: #eaeaea;
+      --muted: #a7a7b1;
+      --accent: #f13b56;
+      --accent-2: #2b2b37;
+      --border: #1b1b24;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      grid-template-rows: 100vh;
+      height: 100vh;
+      width: 100%;
+    }
+    #map { width: 100%; height: 100%; }
+
+    /* Right Panel */
+    .panel {
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #111117, #0f0f15);
+      border-left: 1px solid var(--border);
+      min-width: 320px;
+      max-width: 600px;
+    }
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .title {
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .tabs {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 6px;
+      background: var(--accent-2);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 999px;
+    }
+    .tab-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab-btn.active {
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+    .panel-body {
+      overflow: auto;
+      height: 100%;
+      padding: 12px 14px 18px;
+    }
+    .section-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .12em;
+      margin: 12px 2px 8px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      background: #101018;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .city {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+    .list-item {
+      display: grid;
+      gap: 2px;
+      border: 1px solid var(--border);
+      background: #0e0e14;
+      padding: 10px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .list-item:hover { border-color: #2a2a38; }
+    .button-row {
+      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .chip {
+      border: 1px solid var(--border);
+      background: #0d0d13;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cta {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Mobile: panel overlays map, collapsible header */
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      #map { height: 45vh; }
+      .panel { grid-row: 2; }
+      .panel-body {
+        /* When you scroll the list, the map stays accessible via jumping back to top */
+        overscroll-behavior: contain;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="map" aria-label="Show map"></div>
+
+    <aside class="panel" aria-label="Details panel">
+      <div class="panel-header">
+        <div class="title">Tour Explorer</div>
+        <div class="tabs">
+          <button id="song-stats-tab" class="tab-btn active" type="button">Song Stats</button>
+          <button id="show-list-tab" class="tab-btn" type="button">Show List</button>
+        </div>
+      </div>
+      <div id="panel-body" class="panel-body">
+        <!-- Rendered content goes here -->
+      </div>
+    </aside>
+  </div>
+
   <script>
+    // ---------- 0. Utilities ----------
+    function formatDate(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      } catch {
+        return iso;
+      }
+    }
+    function groupBy(arr, keyFn) {
+      const m = new Map();
+      for (const item of arr) {
+        const k = keyFn(item);
+        if (!m.has(k)) m.set(k, []);
+        m.get(k).push(item);
+      }
+      return m;
+    }
+    function byCountDesc(a, b) { return b[1] - a[1]; }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+
     // --------- 1. Data for shows (SLC + Portland) ---------
 
     const shows = [
@@ -3322,506 +3064,201 @@
 
     ];
 
-  // --------- 2. Album color palette ---------
+    // ---------- 2. Guards ----------
+    if (typeof shows === "undefined") {
+      console.error("Missing `shows` data. Paste your existing shows array where indicated.");
+    }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  });
-}
+    // ---------- 3. Caching DOM ----------
+    const panelBodyEl = document.getElementById("panel-body");
+    const songStatsTabBtn = document.getElementById("song-stats-tab");
+    const showListTabBtn  = document.getElementById("show-list-tab");
 
-const showDetailsEl = document.getElementById("show-details");
+    // ---------- 4. Map (single instance) ----------
+    const DETAIL_ZOOM = 6;
+    const map = L.map("map", {
+      scrollWheelZoom: true,
+      zoomControl: true
+    }).setView([40, -100], 4);
 
-function normalizeSongTitle(title) {
-  if (!title) return "";
-  return title.replace(/\s*\(.*?\)\s*/g, "").trim();
-}
-
-// Build { artistName: { totalShows, songs: [...] } }
-function computeTourStats() {
-  const statsByArtist = {};
-  const showsByArtist = {};
-
-  shows.forEach((show, showIndex) => {
-    show.artists.forEach((artist) => {
-      const artistName = artist.name;
-
-      // Do NOT count Ken Carson & Destroy Lonely's Las Vegas show in stats
-      if (
-        show.city === "Las Vegas" &&
-        show.state === "NV" &&
-        (artistName === "Ken Carson" || artistName === "Destroy Lonely")
-      ) {
-        return; // skip this artist for this show in the stats
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
       }
+    ).addTo(map);
 
-      if (!statsByArtist[artistName]) statsByArtist[artistName] = {};
-      if (!showsByArtist[artistName]) showsByArtist[artistName] = new Set();
-      showsByArtist[artistName].add(showIndex);
+    // ---------- 5. Build markers ----------
+    const markers = [];
+    (Array.isArray(shows) ? shows : []).forEach((show) => {
+      const marker = L.circleMarker([show.lat, show.lon], {
+        radius: 13,
+        weight: 3,
+        color: "#f13b56",
+        fillColor: "#f13b56",
+        fillOpacity: 0.85
+      }).addTo(map);
 
-      const songsMap = statsByArtist[artistName];
-
-      artist.songs.forEach((songTitle) => {
-        const baseTitle = normalizeSongTitle(songTitle);
-        const key = baseTitle.toUpperCase();
-
-        if (!songsMap[key]) {
-          songsMap[key] = {
-            label: baseTitle,
-            plays: 0,
-            showIndices: new Set()
-          };
-        }
-
-        const songStat = songsMap[key];
-        songStat.plays += 1;
-        songStat.showIndices.add(showIndex);
-      });
-    });
-  });
-
-  const result = {};
-  Object.entries(statsByArtist).forEach(([artistName, songsMap]) => {
-    const totalShows = showsByArtist[artistName]
-      ? showsByArtist[artistName].size
-      : 0;
-
-    const songs = Object.values(songsMap).map((info) => ({
-      songName: info.label,
-      plays: info.plays,
-      showCount: info.showIndices.size,
-      pctShows:
-        totalShows > 0 ? (info.showIndices.size / totalShows) * 100 : 0
-    }));
-
-    result[artistName] = {
-      totalShows,
-      songs
-    };
-  });
-
-  return result;
-}
-
-function attachSongStatButtonHandlers(container) {
-  const buttons = container.querySelectorAll(".song-stat-button");
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const pct = btn.dataset.pct;
-      const showCount = btn.dataset.shows;
-      const totalShows = btn.dataset.totalShows;
-      const freqEl = btn.parentElement.querySelector(".song-frequency");
-      const isVisible = freqEl.style.display === "block";
-
-      container
-        .querySelectorAll(".song-frequency")
-        .forEach((el) => {
-          el.style.display = "none";
-        });
-
-      if (!isVisible) {
-        freqEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
-        freqEl.style.display = "block";
-      }
-    });
-  });
-}
-
-// Song Stats panel with artist tabs
-function renderSongStatsPanel() {
-  const stats = computeTourStats();
-
-  // Use artist order from first show
-  const artistOrder = shows[0].artists
-    .map((a) => a.name)
-    .filter((name) => stats[name]);
-  const defaultArtist = artistOrder[0];
-
-  function buildArtistStatsHTML(artistName) {
-    const artistStats = stats[artistName];
-    const totalShows = artistStats.totalShows;
-    const sortedSongs = artistStats.songs
-      .slice()
-      .sort(
-        (a, b) =>
-          b.plays - a.plays || a.songName.localeCompare(b.songName)
+      const dateLabel = formatDate(show.date);
+      marker.bindTooltip(
+        `<strong>${escapeHtml(show.city)}, ${escapeHtml(show.state || "")}</strong><br/>${escapeHtml(dateLabel)}<br/><em>Click to view details</em>`,
+        { direction: "top", opacity: 0.9, sticky: true }
       );
 
-    const songsList = sortedSongs
-      .map((song) => {
-        const pctRounded = Math.round(song.pctShows);
-        const playsLabel = song.plays === 1 ? "play" : "plays";
-        return `
-          <li class="song-stat-item">
-            <button
-              class="song-stat-button"
-              data-pct="${pctRounded}"
-              data-shows="${song.showCount}"
-              data-total-shows="${totalShows}"
-            >
-              <span class="song-name">${song.songName}</span>
-              <span class="song-plays">${song.plays} ${playsLabel}</span>
-            </button>
-            <div class="song-frequency" style="display:none;"></div>
-          </li>
-        `;
-      })
-      .join("");
+      marker.on("click", () => {
+        map.flyTo([show.lat, show.lon], Math.max(map.getZoom(), DETAIL_ZOOM), { duration: 0.7 });
+        activateTab("song-stats");
+        renderShowDetails(show);
+      });
 
-    return `
-      <div class="section">
-        <div class="show-header">
-          <div class="show-location">Song stats — ${artistName}</div>
-          <div class="show-date meta">
-            Across ${totalShows} show${totalShows === 1 ? "" : "s"}
-          </div>
-        </div>
-        <ul class="song-stats-list">
-          ${songsList}
-        </ul>
-      </div>
-    `;
-  }
-
-  const artistTabsHtml = artistOrder
-    .map(
-      (name) => `
-        <button
-          class="artist-tab ${
-            name === defaultArtist ? "active" : ""
-          }"
-          data-artist-name="${name}"
-        >
-          <span class="artist-name">${name}</span>
-          <span class="artist-tab-time">Stats</span>
-        </button>
-      `
-    )
-    .join("");
-
-  showDetailsEl.innerHTML = `
-    <div class="section">
-      <div class="songs-title">Lineup · tap an artist</div>
-      <div class="artist-tabs" id="stats-artist-tabs">
-        ${artistTabsHtml}
-      </div>
-    </div>
-    <div id="artist-stats-details">
-      ${buildArtistStatsHTML(defaultArtist)}
-    </div>
-  `;
-
-  const tabsContainer = document.getElementById("stats-artist-tabs");
-  const detailsEl = document.getElementById("artist-stats-details");
-
-  tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabsContainer
-        .querySelectorAll(".artist-tab")
-        .forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      const artistName = tab.dataset.artistName;
-      detailsEl.innerHTML = buildArtistStatsHTML(artistName);
-      attachSongStatButtonHandlers(detailsEl);
+      markers.push(marker);
     });
-  });
 
-  attachSongStatButtonHandlers(detailsEl);
-}
-// --------- 3. SHOW LIST TAB ---------
+    // ---------- 6. Panels ----------
+    function renderSongStatsPanel() {
+      // Aggregate song frequencies across all shows that have setlists
+      const songCounts = new Map();
+      let totalSongs = 0;
 
-function renderShowList() {
-  // Sort shows by date
-  const sortedShows = [...shows].sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  );
-
-  const today = new Date();
-
-  // Build HTML
-  const showListHTML = sortedShows
-    .map((show, index) => {
-      const showDate = new Date(show.date);
-      const isFuture = showDate > today;
-
-      return `
-        <li class="show-list-item ${isFuture ? "future" : "past"}" data-show-index="${index}">
-          <div class="show-list-date">${formatDate(show.date)}</div>
-          <div class="show-list-venue">${show.venue}</div>
-          <div class="show-list-city">${show.city.toUpperCase()}, ${show.state}</div>
-        </li>
-      `;
-    })
-    .join("");
-
-  showDetailsEl.innerHTML = `
-    <div class="section">
-      <div class="show-header">
-        <div class="show-location">Antagonist 2.0 Tour</div>
-        <div class="show-date meta">All tour dates</div>
-      </div>
-      <ul class="show-list">
-        ${showListHTML}
-      </ul>
-    </div>
-  `;
-
-  // ✅ Get the list element from the DOM
-  const listEl = showDetailsEl.querySelector(".show-list");
-
-  // ✅ Use sortedShows, not "sorted"
-  listEl.querySelectorAll(".show-list-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      const idx = parseInt(item.dataset.showIndex, 10);
-      const clickedShow = sortedShows[idx];
-
-      // Only allow navigation for past shows
-      const showDate = new Date(clickedShow.date + "T00:00:00");
-      const today = new Date();
-
-      if (showDate <= today) {
-        // Zoom / pan map to this show's city
-        map.flyTo(
-          [clickedShow.lat, clickedShow.lon],
-          Math.max(map.getZoom(), DETAIL_ZOOM),
-          { duration: 0.7 }
-        );
-
-        renderShowDetails(clickedShow);
-
-        // Make sure SONG STATS tab is active when viewing details
-        const songStatsTabBtn = document.getElementById("song-stats-tab");
-        const showListTabBtn = document.getElementById("show-list-tab");
-        songStatsTabBtn.classList.add("active");
-        showListTabBtn.classList.remove("active");
-      } else {
-        alert("This show has not happened yet!");
+      for (const show of shows) {
+        const sets = show.setlist || show.sets || []; // try to be forgiving
+        for (const s of sets) {
+          const name = (s && s.song) ? s.song : (s && s.name) ? s.name : null;
+          if (!name) continue;
+          totalSongs++;
+          songCounts.set(name, (songCounts.get(name) || 0) + 1);
+        }
       }
-    });
-  });
-}
 
-
-
-// --------- 4. TAB SWITCH LOGIC ---------
-
-const songStatsTab = document.getElementById("song-stats-tab");
-const showListTab = document.getElementById("show-list-tab");
-
-songStatsTab.addEventListener("click", () => {
-  songStatsTab.classList.add("active");
-  showListTab.classList.remove("active");
-  renderSongStatsPanel();
-});
-
-showListTab.addEventListener("click", () => {
-  showListTab.classList.add("active");
-  songStatsTab.classList.remove("active");
-  renderShowList();
-});
-
-    // --------- 3. Per-show rendering ---------
-function renderShowDetails(show) {
-  // Handle missing data gracefully
-  if (!show || !show.artists) {
-    showDetailsEl.innerHTML = `
-      <div class="section">
-        <div class="show-header">
-          <div class="show-location">${show.city || "Unknown"}, ${show.state || ""}</div>
-          <div class="show-venue">${show.venue || ""}</div>
-          <div class="show-date meta">${formatDate(show.date)}</div>
-        </div>
-        <p class="meta">Setlist unavailable for this show.</p>
-      </div>`;
-    return;
-  }
-
-  // Filter valid artists (those with songs)
-  const validArtists = show.artists.filter(a => a.songs && a.songs.length > 0);
-  if (validArtists.length === 0) {
-    showDetailsEl.innerHTML = `
-      <div class="section">
-        <div class="show-header">
-          <div class="show-location">${show.city}, ${show.state}</div>
-          <div class="show-venue">${show.venue}</div>
-          <div class="show-date meta">${formatDate(show.date)}</div>
-        </div>
-        <p class="meta">This show did not have any confirmed performances.</p>
-      </div>`;
-    return;
-  }
-
-  const defaultArtist = validArtists[show.defaultArtistIndex] || validArtists[0];
-
-  // Build setlist view
-  function buildArtistHTML(artist) {
-    const songList = artist.songs
-      .map((song, i) => `<li>${i + 1}. ${song}</li>`)
-      .join("");
-
-    const notes = artist.notes
-      ? `<div class="section">
-          <h3 class="songs-title">Tour Notes</h3>
-          <p class="meta">${artist.notes}</p>
-        </div>`
-      : `<div class="section">
-          <h3 class="songs-title">Tour Notes</h3>
-          <p class="meta">No special tour notes listed here (yet).</p>
-        </div>`;
-
-    const albums = artist.albumStats
-      ? Object.entries(artist.albumStats)
-          .map(([album, count]) => `<span class="album-pill"><strong>${album}</strong> · ${count} ${count === 1 ? "song" : "songs"}</span>`)
-          .join("")
-      : "";
-
-    const albumSection = albums
-      ? `<div class="section">
-          <h3 class="songs-title">Albums in This Set</h3>
-          <div class="album-stats">${albums}</div>
-        </div>`
-      : "";
-
-    return `
-      <div class="section">
-        <div class="show-header">
-          <div class="show-location">${artist.name}</div>
-          <div class="show-date meta">
-            ${
-              artist.onstage && artist.onstage !== "N/A"
-                ? `On stage: ${artist.onstage}`
-                : "Time not available"
-            }
+      const top = [...songCounts.entries()].sort(byCountDesc).slice(0, 25);
+      const rows = top.map(([song, count]) => {
+        const pct = totalSongs ? Math.round((count / totalSongs) * 100) : 0;
+        return `
+          <div class="list-item" role="listitem" aria-label="${escapeHtml(song)} count ${count}">
+            <div><strong>${escapeHtml(song)}</strong></div>
+            <div class="meta">${count} plays · ~${pct}% of tracked songs</div>
+            <div class="button-row">
+              <span class="chip">Top ${pct || 0}%</span>
+            </div>
           </div>
+        `;
+      }).join("");
+
+      panelBodyEl.innerHTML = `
+        <div class="section-label">Overview</div>
+        <div class="card">
+          <div><strong>Total Shows:</strong> ${(shows || []).length}</div>
+          <div class="meta">Unique songs: ${songCounts.size}</div>
         </div>
 
-        <h3 class="songs-title">Full Set</h3>
-        <ul class="song-list">${songList}</ul>
-      </div>
+        <div class="section-label">Most Played</div>
+        <div class="list" role="list">${rows || '<div class="meta">No setlist data available.</div>'}</div>
+      `;
+    }
 
-      ${notes}
-      ${albumSection}
-    `;
-  }
+    function renderShowList() {
+      // Group by City, State to make scanning easier
+      const byCity = groupBy(shows, s => `${s.city}, ${s.state || ""}`.trim());
+      const blocks = [...byCity.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([city, items]) => {
+        const list = items
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .map((show) => {
+            const lbl = `${formatDate(show.date)} — ${show.venue || "Venue TBA"}`;
+            return `
+              <div class="list-item" data-lat="${show.lat}" data-lon="${show.lon}">
+                <div><strong>${escapeHtml(lbl)}</strong></div>
+                <div class="meta">${escapeHtml(city)}</div>
+              </div>
+            `;
+          }).join("");
 
-  // Artist tabs (switch between artists)
-  const artistTabs = validArtists
-    .map(
-      (artist, i) => `
-      <button class="artist-tab ${artist === defaultArtist ? "active" : ""}" data-artist-index="${i}">
-        <span class="artist-name">${artist.name}</span>
-        <span class="artist-tab-time">${
-          artist.onstage && artist.onstage !== "N/A" ? artist.onstage : "N/A"
-        }</span>
-      </button>`
-    )
-    .join("");
+        return `
+          <div class="card">
+            <div class="city">${escapeHtml(city)}</div>
+            <div class="list">${list}</div>
+          </div>
+        `;
+      }).join("");
 
-  // Vegas note (custom)
-  const specialNote =
-    show.city === "Las Vegas"
-      ? `<p class="meta" style="margin-top:6px;">Note: Ken Carson and Destroy Lonely did not perform at this stop due to scheduling/radius restrictions.</p>`
-      : "";
+      panelBodyEl.innerHTML = `
+        <div class="section-label">All Shows</div>
+        ${blocks || '<div class="meta">No shows found.</div>'}
+      `;
 
-  // Render
-  showDetailsEl.innerHTML = `
-    <div class="section">
-      <div class="show-header">
-        <div class="show-location">${show.city}, ${show.state}</div>
-        <div class="show-venue">${show.venue}</div>
-        <div class="show-date meta">${formatDate(show.date)}</div>
-      </div>
+      // Wire row clicks to fly + open details
+      panelBodyEl.querySelectorAll(".list-item[data-lat]").forEach(el => {
+        el.addEventListener("click", () => {
+          const lat = parseFloat(el.getAttribute("data-lat"));
+          const lon = parseFloat(el.getAttribute("data-lon"));
+          map.flyTo([lat, lon], Math.max(map.getZoom(), DETAIL_ZOOM), { duration: 0.7 });
 
-      <div class="artist-tabs" id="artist-tabs">${artistTabs}</div>
-      ${specialNote}
-    </div>
-
-    <div id="artist-details">
-      ${buildArtistHTML(defaultArtist)}
-    </div>
-  `;
-
-  // Tab switching
-  const tabs = document.querySelectorAll(".artist-tab");
-  const details = document.getElementById("artist-details");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-      const i = parseInt(tab.dataset.artistIndex, 10);
-      details.innerHTML = buildArtistHTML(validArtists[i]);
-    });
-  });
-}
-
-    // --------- 4. Wire up Song Stats button ---------
-    const songStatsTabEl = document.getElementById("song-stats-tab");
-    if (songStatsTabEl) {
-      songStatsTabEl.addEventListener("click", () => {
-        renderSongStatsPanel();
-        songStatsTabEl.classList.add("active");
+          // Find the show in data (first match)
+          const show = shows.find(s => +s.lat === lat && +s.lon === lon) || null;
+          if (show) {
+            activateTab("song-stats");
+            renderShowDetails(show);
+          }
+        });
       });
     }
 
-  // --------- 5. Map & markers ---------
-const map = L.map("map", {
-  scrollWheelZoom: true,
-  zoomControl: true
-}).setView([40, -100], 4);
+    function renderShowDetails(show) {
+      const cityState = `${show.city}, ${show.state || ""}`.trim();
+      const dateLabel = formatDate(show.date);
+      const venue = show.venue || "Venue TBA";
+      const sets = show.setlist || show.sets || [];
 
-L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  {
-    maxZoom: 18,
-    attribution:
-      '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
-  }
-).addTo(map);
+      const setRows = sets.length
+        ? sets.map((s, i) => {
+            const name = (s && s.song) ? s.song : (s && s.name) ? s.name : `Track ${i+1}`;
+            return `<div class="list-item"><div><strong>${escapeHtml(name)}</strong></div></div>`;
+          }).join("")
+        : '<div class="meta">No setlist available for this show.</div>';
 
-// zoom level to use when focusing on a single show
-const DETAIL_ZOOM = 6;
+      panelBodyEl.innerHTML = `
+        <div class="section-label">Selected Show</div>
+        <div class="card">
+          <div class="city">${escapeHtml(cityState)}</div>
+          <div>${escapeHtml(venue)}</div>
+          <div class="meta">${escapeHtml(dateLabel)}</div>
+          <div class="button-row">
+            <button class="cta" id="back-to-list" type="button">Back to list</button>
+            <span class="chip">Zoom ${DETAIL_ZOOM}×</span>
+          </div>
+        </div>
 
-shows.forEach((show) => {
-  const marker = L.circleMarker([show.lat, show.lon], {
-    radius: 13,
-    weight: 3,
-    color: "#f13b56",
-    fillColor: "#f13b56",
-    fillOpacity: 0.85
-  }).addTo(map);
+        <div class="section-label">Setlist</div>
+        <div class="list">${setRows}</div>
+      `;
 
-  const dateLabel = formatDate(show.date);
-
-  marker.bindTooltip(
-    `<strong>${show.city}, ${show.state}</strong><br/>
-     ${dateLabel}<br/>
-     <em>Click to view all sets</em>`,
-    { direction: "top", opacity: 0.9 }
-  );
-
-  marker.on("click", () => {
-    // smooth zoom/pan to this city
-    map.flyTo(
-      [show.lat, show.lon],
-      Math.max(map.getZoom(), DETAIL_ZOOM),
-      { duration: 0.7 }
-    );
-
-    if (songStatsTabEl) {
-      // make sure Song Stats tab is active if you’re using tabs
-      songStatsTabEl.classList.add("active");
-      if (showListTabEl) showListTabEl.classList.remove("active");
+      const back = document.getElementById("back-to-list");
+      if (back) {
+        back.addEventListener("click", () => {
+          activateTab("show-list");
+          renderShowList();
+        });
+      }
     }
 
-    renderShowDetails(show);
-  });
-});
+    // ---------- 7. Tabs ----------
+    function activateTab(which) {
+      const isStats = which === "song-stats";
+      songStatsTabBtn.classList.toggle("active", isStats);
+      showListTabBtn.classList.toggle("active", !isStats);
+    }
 
-if (shows.length > 0) {
-  const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
-  map.fitBounds(bounds.pad(0.2));
-}
+    songStatsTabBtn.addEventListener("click", () => {
+      activateTab("song-stats");
+      renderSongStatsPanel();
+    });
+    showListTabBtn.addEventListener("click", () => {
+      activateTab("show-list");
+      renderShowList();
+    });
+
+    // ---------- 8. Initial render ----------
+    renderSongStatsPanel();
+  </script>
+</body>
+</html>
