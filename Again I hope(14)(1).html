@@ -3767,61 +3767,63 @@ function renderShowDetails(show) {
       });
     }
 
-  // --------- 5. Map & markers ---------
-const map = L.map("map", {
-  scrollWheelZoom: true,
-  zoomControl: true
-}).setView([40, -100], 4);
-
-L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  {
-    maxZoom: 18,
-    attribution:
-      '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
+<!-- CSS: make the map’s height unambiguous -->
+<style>
+  #map{
+    flex: 1.3;
+    min-height: 260px;
+    height: 60vh;           /* <- explicit height so Leaflet can paint */
+    background:#050509;
   }
-).addTo(map);
+  @media (max-width:880px){
+    #map{ height:52vh; }    /* keep your mobile behavior */
+  }
+</style>
 
-// zoom level to use when focusing on a single show
-const DETAIL_ZOOM = 6;
+<script>
+  // --------- 5. Map & markers (robust init) ---------
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      // If previous code (e.g., 'shows' array) threw, we won't get here.
+      const map = L.map('map', {
+        scrollWheelZoom: true,   // wheel zoom enabled
+        zoomControl: true
+      }).setView([40, -100], 4);
 
-shows.forEach((show) => {
-  const marker = L.circleMarker([show.lat, show.lon], {
-    radius: 13,
-    weight: 3,
-    color: "#f13b56",
-    fillColor: "#f13b56",
-    fillOpacity: 0.85
-  }).addTo(map);
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        { maxZoom: 18, attribution: '&copy; <a href="https://carto.com/">CARTO</a> · basemap' }
+      ).addTo(map);
 
-  const dateLabel = formatDate(show.date);
+      // Create a bounds object so we can fit all shows later
+      const bounds = L.latLngBounds();
 
-  marker.bindTooltip(
-    `<strong>${show.city}, ${show.state}</strong><br/>
-     ${dateLabel}<br/>
-     <em>Click to view all sets</em>`,
-    { direction: "top", opacity: 0.9 }
-  );
+      shows.forEach((show) => {
+        const marker = L.circleMarker([show.lat, show.lon], {
+          radius: 13, weight: 3, color: '#f13b56', fillColor: '#f13b56', fillOpacity: 0.85
+        }).addTo(map);
 
-  marker.on("click", () => {
-    // smooth zoom/pan to this city
-    map.flyTo(
-      [show.lat, show.lon],
-      Math.max(map.getZoom(), DETAIL_ZOOM),
-      { duration: 0.7 }
-    );
+        const dateLabel = formatDate(show.date);
+        marker.bindTooltip(
+          `<strong>${show.city}, ${show.state}</strong><br/>${dateLabel}<br/><em>Click to view all sets</em>`,
+          { direction: 'top', opacity: 0.9 }
+        );
 
-    if (songStatsTabEl) {
-      // make sure Song Stats tab is active if you’re using tabs
-      songStatsTabEl.classList.add("active");
-      if (showListTabEl) showListTabEl.classList.remove("active");
+        marker.on('click', () => {
+          // optional: zoom in slightly on click so it feels more interactive
+          map.setView([show.lat, show.lon], Math.max(map.getZoom(), 7), { animate: true });
+          if (songStatsTabEl) songStatsTabEl.classList.remove('active');
+          renderShowDetails(show);
+        });
+
+        bounds.extend([show.lat, show.lon]);
+      });
+
+      if (bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+      // If the map is in a flex container, ensure Leaflet recalculates size:
+      setTimeout(() => map.invalidateSize(), 0);
+    } catch (e) {
+      console.error('Map init failed. Likely a syntax error earlier (e.g., in the shows array):', e);
     }
-
-    renderShowDetails(show);
   });
-});
-
-if (shows.length > 0) {
-  const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
-  map.fitBounds(bounds.pad(0.2));
-}
+</script>
