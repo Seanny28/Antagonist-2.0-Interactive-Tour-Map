@@ -3532,6 +3532,26 @@ function renderSongStatsPanel() {
 
   attachSongStatButtonHandlers(detailsEl);
 }
+	  function renderUpcomingShowEmptyState(show) {
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="show-header">
+        <div class="show-location">${show.city}, ${show.state}</div>
+        <div class="show-venue">${show.venue || ""}</div>
+        <div class="show-date meta">${formatDate(show.date)}</div>
+      </div>
+
+      <p class="meta" style="margin-top:8px;">
+        This stop hasn’t happened yet — setlist will appear after the show.
+      </p>
+
+      <ul class="meta" style="margin-top:6px; line-height:1.4;">
+        <li>Tap <strong>Song Stats</strong> for tour-wide trends.</li>
+        <li>Come back after the date for full sets and on-stage times.</li>
+      </ul>
+    </div>
+  `;
+}
 // --------- 3. SHOW LIST TAB ---------
 
 function renderShowList() {
@@ -3543,32 +3563,27 @@ function renderShowList() {
   const today = new Date();
 
   // Build HTML
-  const showListHTML = sortedShows
-    .map((show, index) => {
-      const showDate = new Date(show.date);
-      const isFuture = showDate > today;
+  document.querySelectorAll(".show-list-item").forEach((item) => {
+  item.addEventListener("click", () => {
+    const showIndex = parseInt(item.dataset.showIndex, 10);
+    const clickedShow = shows[showIndex];
+    const showDate = new Date(clickedShow.date);
+    const today = new Date();
 
-      return `
-        <li class="show-list-item ${isFuture ? "future" : "past"}" data-show-index="${index}">
-          <div class="show-list-date">${formatDate(show.date)}</div>
-          <div class="show-list-venue">${show.venue}</div>
-          <div class="show-list-city">${show.city.toUpperCase()}, ${show.state}</div>
-        </li>
-      `;
-    })
-    .join("");
-
-  showDetailsEl.innerHTML = `
-    <div class="section">
-      <div class="show-header">
-        <div class="show-location">Antagonist 2.0 Tour</div>
-        <div class="show-date meta">All tour dates</div>
-      </div>
-      <ul class="show-list">
-        ${showListHTML}
-      </ul>
-    </div>
-  `;
+    if (showDate <= today) {
+      // Zoom the map to this city and open its details
+      if (map && clickedShow.lat && clickedShow.lon) {
+        map.flyTo([clickedShow.lat, clickedShow.lon], 10, { duration: 0.8 });
+        // Optional: make sure map is visible again on small screens
+        document.getElementById("map")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      renderShowDetails(clickedShow);
+    } else {
+      // Future show: render friendly empty state (see Section 3)
+      renderUpcomingShowEmptyState(clickedShow);
+    }
+  });
+});
 
   // ✅ Get the list element from the DOM
   const listEl = showDetailsEl.querySelector(".show-list");
@@ -3785,7 +3800,7 @@ function renderShowDetails(show) {
   document.addEventListener('DOMContentLoaded', () => {
     try {
       // If previous code (e.g., 'shows' array) threw, we won't get here.
-      const map = L.map('map', {
+     map = L.map("map", {
         scrollWheelZoom: true,   // wheel zoom enabled
         zoomControl: true
       }).setView([40, -100], 4);
