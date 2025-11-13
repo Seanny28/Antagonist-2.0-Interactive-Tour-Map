@@ -465,6 +465,10 @@
   ></script>
 
   <script>
+	  // Make these available to all functions
+let map;
+let tourBounds;
+
     // --------- 1. Data for shows (SLC + Portland) ---------
 
     const shows = [
@@ -3749,7 +3753,7 @@ function renderShowDetails(show) {
     }
 
     // --------- 5. Map & markers ---------
-    const map = L.map("map", {
+	  map = L.map("map", {
       scrollWheelZoom: true,
       zoomControl: true
     }).setView([40, -100], 4);
