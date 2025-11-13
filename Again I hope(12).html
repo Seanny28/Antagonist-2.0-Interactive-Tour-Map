@@ -1,0 +1,3798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Antagonist 2.0 Interactive Tour Map</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Inter", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top left, #2b1235 0, #050509 48%);
+      color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-shell {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 18px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at top left, #3b143f 0, #050509 55%);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    header .meta {
+      margin-left: auto;
+      font-size: 0.8rem;
+      opacity: 0.75;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    header .meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #f13b56;
+      box-shadow: 0 0 6px rgba(241, 59, 86, 0.9);
+    }
+
+    .layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      max-height: calc(100vh - 64px);
+    }
+
+    #map {
+      flex: 1.3;
+      min-height: 260px;
+      background: #050509;
+    }
+
+    #info-panel {
+      flex: 1;
+      max-width: 480px;
+      min-width: 0;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(circle at top right, #321637 0, #06040a 60%);
+      display: flex;
+      flex-direction: column;
+      padding: 14px 14px 10px;
+      gap: 10px;
+    }
+
+    @media (max-width: 880px) {
+      .layout {
+        flex-direction: column;
+        max-height: none;
+      }
+
+      #map {
+        flex: none;
+        height: 52vh;
+        max-height: 430px;
+      }
+
+      #info-panel {
+        max-width: none;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 8, 18, 0.9);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.9;
+    }
+
+    .section {
+      margin-bottom: 10px;
+    }
+
+    #show-details {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    #show-details::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #show-details::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    .show-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .show-location {
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .show-venue {
+      font-size: 0.82rem;
+      opacity: 0.9;
+    }
+
+    .show-date {
+      font-size: 0.82rem;
+      opacity: 0.9;
+    }
+
+    .artist-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 6px 0 8px;
+    }
+
+    .artist-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: none;
+      background: #181824;
+      color: #f5f5f5;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+      transform: translateY(0);
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.1s ease;
+    }
+
+    .artist-tab:hover {
+      background: #222234;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.65);
+      transform: translateY(-1px);
+    }
+
+    .artist-tab-time {
+      font-size: 0.78rem;
+      color: #c6c6c6;
+      opacity: 0.9;
+    }
+
+    .artist-tab.active {
+      background: #f13b56;
+      color: #050509;
+      box-shadow: 0 3px 10px rgba(241, 59, 86, 0.8);
+    }
+
+    .artist-tab.active .artist-tab-time {
+      color: #050509;
+      opacity: 0.95;
+    }
+
+    .artist-name {
+      font-weight: 600;
+    }
+
+    .songs-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+
+    .song-list {
+      list-style: none;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .song-list li {
+      padding: 2px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    }
+
+    .song-list li:last-child {
+      border-bottom: none;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      font-size: 0.74rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(10, 8, 18, 0.9);
+      opacity: 0.9;
+    }
+
+    .chip-accent {
+      border-color: rgba(241, 59, 86, 0.9);
+      color: #fddfe4;
+      background: rgba(241, 59, 86, 0.14);
+    }
+
+    .album-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 0.78rem;
+    }
+
+    .album-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(10, 8, 18, 0.9);
+    }
+
+    .album-pill strong {
+      font-weight: 600;
+    }
+
+    .album-pill span {
+      opacity: 0.85;
+    }
+
+    /* Song Stats button */
+    .pill-button {
+      cursor: pointer;
+      background: #f13b56;
+      color: #000000;
+      border: 2px solid #f13b56;
+      font-weight: 900;
+      padding: 10px 16px;
+      border-radius: 6px;
+      display: inline-block;
+      font-size: 0.95rem;
+    }
+
+    .pill-button:hover {
+      background: #ff6d80;
+      border-color: #ff6d80;
+    }
+
+    .pill-button.active {
+      background: #000000;
+      color: #f13b56;
+      border-color: #f13b56;
+    }
+.tab-row {
+  display: flex;
+  gap: 8px;
+}
+
+.show-list {
+  list-style: none;
+  margin-top: 8px;
+  padding-left: 0;
+}
+
+.show-list-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.show-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.show-list-date {
+  font-size: 0.85rem;
+  color: #f13b56;
+  font-weight: 600;
+}
+
+.show-list-venue {
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+
+.show-list-city {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.show-list-item.future .show-list-date {
+  color: #aaa;
+}
+
+    /* Stats view */
+    .song-stats-list {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 6px;
+      font-size: 0.85rem;
+    }
+
+    .song-stat-item {
+      margin-bottom: 4px;
+    }
+
+    .song-stat-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: transparent;
+      border: none;
+      color: #f5f5f5;
+      text-align: left;
+      padding: 4px 0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .song-stat-button:hover {
+      color: #f13b56;
+    }
+
+    .song-frequency {
+      font-size: 0.78rem;
+      color: #b0b0b0;
+      padding-left: 4px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header>
+      <div>
+        <h1>Antagonist 2.0 Setlist Explorer</h1>
+      </div>
+
+      <div class="meta">
+        <span>
+          <span class="dot"></span>
+          Live tour data · fan compiled
+        </span>
+        <span>Map: tap a city · Panel: tap an artist</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <div id="map"></div>
+
+      <aside id="info-panel">
+        <div class="section tab-row">
+  <button class="pill pill-button active" id="song-stats-tab">
+    Song Stats
+  </button>
+  <button class="pill pill-button" id="show-list-tab">
+    Show List
+  </button>
+</div>
+
+
+        <div id="show-details">
+          <!-- content injected by JS -->
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+
+  <script>
+    // --------- 1. Data for shows (SLC + Portland) ---------
+
+    const shows = [
+      {
+        city: "Salt Lake City",
+        state: "UT",
+        venue: "Delta Center",
+        date: "2025-10-03",
+        lat: 40.7683,
+        lon: -111.9011,
+        defaultArtistIndex: 4, // Playboi Carti as default tab
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "8:00 PM",
+            songs: [
+              "#ARP (Live debut)",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy"
+            ],
+            uniqueSongs: ["#ARP (Live debut)"],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 1,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "8:25 PM",
+            songs: [
+              "Lifestyle (shortened)",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "9:00 PM",
+            songs: [
+              "party n get high (interlude) (Live debut)",
+              "how u feel?",
+              "FAKENGGAS (shortened)",
+              "SYRUP SIPPIN",
+              "jumanji",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT (shortened)",
+              "screwed up",
+              "ABOUT MONEY (shortened)",
+              "BLITZ (shortened)",
+              "risk",
+              "soooo high (Live debut; shortened)",
+              "stfu"
+            ],
+            uniqueSongs: [
+              "party n get high (interlude) (Live debut)",
+              "soooo high (Live debut; shortened)"
+            ],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 3,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "9:50 PM",
+            songs: [
+              "Lord Of Chaos (shortened)",
+              "Blakk Rokkstar",
+              "Money Spread",
+              "delusional",
+              "It's Over",
+              "Lose It",
+              "LiveLeak",
+              "Green Room",
+              "mewtwo (Intro into i need u)",
+              "i need u",
+              "Succubus",
+              "Me N My Kup (shortened)",
+              "Rock N Roll",
+              "Trap Jump",
+              "Freestyle 2",
+              "ss",
+              "overseas",
+              "Fighting My Demons"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "A Great Chaos": 10,
+              "More Chaos": 5,
+              "Project X": 1,
+              "X": 1,
+              "Others": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "10:55 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+              "Can You Stand the Rain (New Edition song)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY (Live debut)",
+              "Stop Breathing",
+              "Rockstar Made",
+              "ALIVE",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "FE!N (Travis Scott cover)",
+              "Type Shit (Future & Metro Boomin cover)",
+              "Long Time (Intro)",
+              "POP OUT (played again; shortened)",
+              "POP OUT (played again)",
+              "POP OUT (played again)",
+              "POP OUT (played one last time)"
+            ],
+            uniqueSongs: ["WAKE UP F1LTHY (Live debut)"],
+            albumStats: {
+              "MUSIC": 20,
+              "Whole Lotta Red": 3,
+              "Covers": 3,
+              "Die Lit": 2,
+              "Others": 1
+            }
+          }
+        ]
+      },
+
+      {
+        city: "Portland",
+        state: "OR",
+        venue: "Moda Center",
+        date: "2025-10-05",
+        lat: 45.5316,
+        lon: -122.6668,
+        defaultArtistIndex: 4, // Carti
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "7:00 PM",
+            songs: [
+              "#ARP",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 1,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "7:21 PM",
+            songs: [
+              "Lifestyle",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "7:53 PM",
+            songs: [
+              "show u how (Live debut)",
+              "LOCK IN (tour debut; shortened)",
+              "how u feel?",
+              "FAKENGGAS",
+              "SYRUP SIPPIN",
+              "jumanji",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT (shortened)",
+              "screwed up",
+              "stfu",
+              "ABOUT MONEY",
+              "BLITZ",
+              "risk",
+              "soooo high"
+            ],
+            uniqueSongs: [
+              "show u how (Live debut)",
+              "LOCK IN (tour debut; shortened)"
+            ],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 4,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "8:36 PM",
+            songs: [
+              "Lord Of Chaos",
+              "Blakk Rokkstar",
+              "Money Spread",
+              "delusional",
+              "It's Over",
+              "Lose It",
+              "LiveLeak",
+              "Green Room",
+              "mewtwo",
+              "i need u",
+              "Succubus",
+              "Me N My Kup",
+              "Rock N Roll",
+              "Trap Jump",
+              "Freestyle 2",
+              "ss",
+              "overseas",
+              "Fighting My Demons"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "A Great Chaos": 10,
+              "More Chaos": 5,
+              "Project X": 1,
+              "X": 1,
+              "Others": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "9:45 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+              "Control (tour debut)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY",
+              "Stop Breathing",
+              "Rockstar Made",
+              "ALIVE",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "OLYMPIAN"
+            ],
+            uniqueSongs: ["Control (tour debut)"],
+            albumStats: {
+              "MUSIC": 16,
+              "Whole Lotta Red": 4,
+              "Die Lit": 1,
+              "Others": 1,
+              "Covers": 1
+            }
+          }
+        ]
+      },
+
+      {
+        city: "Seattle",
+        state: "WA",
+        venue: "Climate Pledge Arena",
+        date: "2025-10-08",
+        lat: 47.622,
+        lon: -122.354,
+        defaultArtistIndex: 4, // Carti
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "7:05 PM",
+            songs: [
+              "#ARP",
+              "Georgia Boy",
+              "RedFlag",
+              "Face Tattoos",
+              "PBrazy",
+	      "Profit"
+            ],
+            uniqueSongs: ["Tour Debut of 'Profit'"],
+            albumStats: {
+              "Midnight Blassic": 3,
+              "ApolloRed1 Vs the World": 2,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "7:25 PM",
+            songs: [
+              "Pick A Side",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "5unna"
+            ],
+            uniqueSongs: ["Pick A Side (live debut)"],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 1,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+              "Snotty World": 1,
+	      "Other": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "8:00 PM",
+            songs: [
+              "jumanji",
+              "LOCK IN",
+              "how u feel?",
+              "FAKENGGAS",
+              "SYRUP SIPPIN",
+              "show u how",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT",
+              "screwed up",
+              "stfu",
+              "ABOUT MONEY",
+              "BLITZ",
+              "risk",
+              "soooo high"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 4,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "8:36 PM",
+            songs: [
+              "Lord Of Chaos",
+              "Blakk Rokkstar (Intro played but paused when fans rushed floor)",
+              "Rock N Roll (Came back after long pause)"
+            ],
+            uniqueSongs: ["Set cut off early due to crowd rushing the floor"],
+            albumStats: {
+              "More Chaos": 2,
+              "Project X": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "9:50 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+	      "ss (with Ken Carson)",
+	      "Fighting My Demons (with Ken Carson)",
+              "Control",
+	      "On That Time (Tour Debut)",
+              "Timeless (The Weeknd cover)",
+              "WAKE UP F1LTHY",
+              "FOMDJ",
+              "EVIL JORDAN",
+              "R.I.P.",
+              "ILoveUIHateU",
+              "2024",
+              "OLYMPIAN",
+	      "POP OUT (Played Again)",
+	      "Shoota (Tour Debut)",
+	      "FE!N (Travis Scott cover)",
+	      "Location (Tour Debut)",
+	      "Long Time (Intro)",
+	      "Alive",
+	      "Made It This Far (Live Debut, unreleased)"
+            ],
+            uniqueSongs: [
+	      "Ken Carson on stage with Carti", 
+	      "'On That Time' tour debut",
+	      "'Shoota' tour debut", 
+	      "'Location' tour debut", 
+	      "'Made It This Far' live debut"
+	    ],
+            albumStats: {
+              "MUSIC": 17,
+              "Whole Lotta Red": 5,
+              "Die Lit": 3,
+              "Others": 2,
+              "Covers": 4,
+	      "Playboi Carti": 1
+            }
+          }
+        ]
+      },
+		 {
+        city: "San Francisco",
+        state: "CA",
+        venue: "Chase Center",
+        date: "2025-10-10",
+        lat: 37.76806,
+        lon: -122.38750,
+        defaultArtistIndex: 4, // Playboi Carti as default tab
+        artists: [
+          {
+            name: "ApolloRed1",
+            onstage: "7:00 PM",
+            songs: [
+              "(unknown)",
+			  "Face Tattoos",
+              "Georgia Boy",
+              "RedFlag",
+              "Profit"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "Midnight Blassic": 2,
+              "ApolloRed1 Vs the World": 1,
+              "Tantrum": 1
+            }
+          },
+          {
+            name: "Homixide Gang",
+            onstage: "7:20 PM",
+            songs: [
+              "K9ine (new song, live debut)",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G (shortened)",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "Lifestyle"
+            ],
+            uniqueSongs: ["K9ine live debut"],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+			  "Others": 1
+            }
+          },
+          {
+            name: "Destroy Lonely",
+            onstage: "7:50 PM",
+            songs: [
+              "jumanji",
+              "LOCK IN",
+			  "how u feel?",
+              "FAKENGGAS",
+              "SYRUP SIPPIN",
+              "show u how",
+              "if looks could kill",
+              "NOSTYLIST",
+              "DOUBT IT",
+              "screwed up",
+              "stfu",
+              "about money",
+              "BLITZ",
+			  "risk",
+              "soooo high"
+            ],
+            uniqueSongs: [
+              "jumanji different instrumental"
+            ],
+            albumStats: {
+              "<3³": 6,
+              "LOVE LASTS FOREVER": 4,
+              "NO STYLIST": 3,
+              "If Looks Could Kill": 2
+            }
+          },
+          {
+            name: "Ken Carson",
+            onstage: "8:35 PM",
+            songs: [
+              "Lord Of Chaos (shortened)",
+              "Blakk Rokkstar",
+              "Money Spread",
+              "delusional",
+              "It's Over",
+              "Lose It",
+              "LiveLeak",
+              "Green Room",
+              "mewtwo (shortened)",
+              "i need u",
+              "Succubus",
+              "Me N My Kup",
+              "Rock N Roll",
+              "Trap Jump",
+              "Freestyle 2",
+              "ss (first half)",
+              "overseas",
+              "Fighting My Demons"
+            ],
+            uniqueSongs: [],
+            albumStats: {
+              "A Great Chaos": 10,
+              "More Chaos": 5,
+              "Project X": 1,
+              "X": 1,
+              "Others": 1
+            }
+          },
+          {
+            name: "Playboi Carti",
+            onstage: "9:45 PM",
+            songs: [
+              "POP OUT",
+              "POP OUT (played again)",
+              "OPM BABI",
+              "CRANK",
+              "COCAINE NOSE",
+              "OVERLY",
+              "CHARGE DEM HOES A FEE",
+              "K POP",
+              "LIKE WEEZY",
+              "GOOD CREDIT",
+              "HBA",
+              "ss (with Ken Carson)",
+              "Fighting My Demons (With Ken Carson)",
+              "Stop Breathing",
+              "On That Time",
+              "Rockstar Made",
+              "R.I.P.",
+              "Rockstar (unreleased)",
+              "Timeless (The Weeknd cover)",
+              "EVIL JORDAN",
+              "ILoveUIHateU",
+              "Die4Guy",
+              "Shoota",
+              "Location",
+              "Long Time (Intro)",
+              "Sky (Tour Debut)",
+              "FE!N (Travis Scott cover)",
+				"TOXIC (Tour debut)",
+				"OLYMPIAN",
+				"Made It This Far (Unreleased)"
+            ],
+            uniqueSongs: ["Ken Carson on stage with Carti", 
+						  "'Sky' tour debut",
+						  "'TOXIC' tour debut"
+						 ],
+            albumStats: {
+              "MUSIC": 14,
+              "Whole Lotta Red": 6,
+              "Covers": 4,
+              "Die Lit": 3,
+              "Others": 2,
+				"Playboi Carti": 1
+            }
+          }
+        ]
+      },
+		{
+  city: "Sacramento",
+  state: "CA",
+  venue: "Golden 1 Center",
+  date: "2025-10-12",
+  lat: 38.580361,
+  lon: -121.499611,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:06 PM",
+      songs: [
+        "Georgia Boy",
+        "Face Tattoos"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 2
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:20 PM",
+      songs: [
+        "Blick (Live debut, unreleased)",
+        "5G",
+        "R50",
+        "Uzi Work",
+        "Drakon !",
+        "Lifestyle"
+      ],
+      uniqueSongs: ["Blick (Live debut, unreleased)"],
+      albumStats: {
+        "Homixide Lifestyle": 2,
+        "Homixide Lifestyle 2": 1,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:54 PM",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill (Tour debut)",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER (Tour debut)",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [
+        "catch a kill (Tour debut)",
+        "NEVEREVER (Tour debut)"
+      ],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:38 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:30 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Rock N Roll (Ken Carson cover) (with Ken Carson)",
+        "ss (Ken Carson cover) (with Ken Carson)",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far",
+        "Fine Shit"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "Fine Shit"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Covers": 4,
+        "Die Lit": 3,
+        "Others": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+		{
+  city: "Los Angeles",
+  state: "CA",
+  venue: "Crypto.com Arena",
+  date: "2025-10-14",
+  lat: 34.043,
+  lon: -118.267,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "N/A",
+      songs: [
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "N/A",
+      songs: [
+        "Pick A Side (unreleased)",
+        "Lifestyle",
+        "PC5",
+        "VILLAIN",
+        "REDRAG",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "N/A",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "N/A",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "LiveLeak",
+        "Green Room",
+        "mewtwo (shortened)",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Trap Jump",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 5,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "N/A",
+      songs: [
+        "POP OUT",
+        "POP OUT (played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT (with Kendrick Lamar)",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far (New song)",
+        "Fine Shit"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "Made It This Far (New song)",
+        "Fine Shit"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 2,
+        "Covers": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+		{
+  city: "Phoenix",
+  state: "AZ",
+  venue: "Mortgage Matchup Center",
+  date: "2025-10-17",
+  lat: 33.445,
+  lon: -112.071,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "N/A",
+      songs: [
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "N/A",
+      songs: [
+        "Pick A Side (Unreleased)",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "Lifestyle"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "N/A",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "N/A",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "N/A",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far (New song)"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "Made It This Far (New song)"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 2,
+        "Covers": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+		{
+  city: "Las Vegas",
+  state: "NV",
+  venue: "MGM Grand Garden Arena",
+  date: "2025-10-18",
+  lat: 36.102,
+  lon: -115.171,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "N/A",
+      songs: [
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "N/A",
+      songs: [
+        "Pick A Side (unreleased)",
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "N/A",
+      songs: [
+        "POP OUT",
+        "POP OUT (played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far (New song)"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "Made It This Far (New song)"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 2,
+        "Covers": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+
+{
+  city: "Denver",
+  state: "CO",
+  venue: "Ball Arena",
+  date: "2025-10-20",
+  lat: 39.748,
+  lon: -105.007,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: ["#ARP (new addition to set)"],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 2,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:30 PM",
+      songs: [
+        "K9ine (New song)",
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: ["K9ine (New song)"],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "8:00 PM",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:45 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:40 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far (New song)",
+        "Made It This Far (Played again)"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "Made It This Far (New song, shortened after Carti stopped show to help fans)"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 3,
+        "Covers": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+{
+  city: "St. Paul",
+  state: "MN",
+  venue: "Grand Casino Arena",
+  date: "2025-10-23",
+  lat: 45.995,
+  lon: -93.295,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "N/A",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: ["#ARP (new addition to set)"],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 2,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "N/A",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "N/A",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: ["(Setlist incomplete according to attendees)"],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "N/A",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "N/A",
+      songs: [
+        "POP OUT (New version of the extended intro played)",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "LIKE WEEZY",
+        "HBA",
+        "Stop Breathing",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "Shoota",
+        "Long Time (Intro) (Restarted)",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far (New song)",
+        "FINE SHIT"
+      ],
+      uniqueSongs: [
+        "Made It This Far (New song)",
+        "FINE SHIT (Setlist debut)",
+        "POP OUT (new extended intro version)"
+      ],
+      albumStats: {
+        "MUSIC": 13,
+        "Die Lit": 3,
+        "Whole Lotta Red": 2,
+        "Covers": 2,
+        "Others": 1
+      },
+      notes: "Carti arrived ~35 minutes late, cutting several songs from the set."
+    }
+  ]
+},
+
+		{
+  city: "Kansas City",
+  state: "MO",
+  venue: "T-Mobile Center",
+  date: "2025-10-24",
+  lat: 39.097,
+  lon: -94.579,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:55 PM",
+      songs: [
+        "5G",
+        "FACET!ME",
+        "Uzi Work",
+        "Holler!"
+      ],
+      uniqueSongs: ["Holler! (Tour Debut)"],
+      albumStats: {
+        "Homixide Lifestyle 2": 2,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      },
+      notes: "Setlist incomplete; only four songs confirmed."
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "8:40 PM",
+      songs: [
+        "LOCK IN",
+        "kansas (Live debut)",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: ["kansas (Live debut)"],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "9:25 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "10:00 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "FOMDJ",
+        "ALIVE",
+        "Made It This Far (New song)"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Made It This Far (New song)"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 3,
+        "Covers": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+		{
+  city: "Columbus",
+  state: "OH",
+  venue: "Nationwide Arena",
+  date: "2025-10-28",
+  lat: 39.969,
+  lon: -83.006,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:20 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:50 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air (Tour Debut)",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: ["In The Air (Tour Debut)"],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:35 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "10:00 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (New song)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "Made It This Far (New song)"
+      ],
+      uniqueSongs: [
+        "Rockstar (New song)",
+        "Made It This Far (New song)"
+      ],
+      albumStats: {
+        "MUSIC": 13,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 2,
+        "Playboi Carti": 1,
+        "Covers": 1
+      }
+    }
+  ]
+},
+{
+  city: "Chicago",
+  state: "IL",
+  venue: "United Center",
+  date: "2025-10-30",
+  lat: 41.880,
+  lon: -87.674,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:35 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:55 PM",
+      songs: [
+        "LOCK IN",
+        "jumanji",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "In The Air",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "risk",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "<3³": 3,
+        "If Looks Could Kill": 3,
+        "Others": 1
+      },
+      notes: "Setlist marked incomplete by attendees."
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:40 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Project X": 1,
+        "X": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:35 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "CARNIVAL (Ye cover / Tour debut)",
+        "Rockstar (New song / Shortened)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "Made It This Far (New song)"
+      ],
+      uniqueSongs: [
+        "CARNIVAL (Ye cover / Tour debut)",
+        "Rockstar (New song / Shortened)",
+        "Made It This Far (New song)"
+      ],
+      albumStats: {
+        "MUSIC": 14,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Others": 2,
+        "Playboi Carti": 1,
+        "Covers": 3
+      }
+    }
+  ]
+},
+{
+  city: "Detroit",
+  state: "MI",
+  venue: "Little Caesars Arena",
+  date: "2025-10-31",
+  lat: 42.341,
+  lon: -83.055,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "6:55 PM",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 2,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:20 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:50 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:35 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "yes (Live debut)",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: ["yes (Live debut)"],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Others": 2,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:50 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "We Paid (Lil Baby cover, with Lil Baby & 42 Dugg)",
+        "Freestyle (with Lil Baby)",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Rockstar (Shortened)",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Made It This Far"
+      ],
+      uniqueSongs: [
+        "We Paid (Lil Baby cover, with Lil Baby & 42 Dugg)",
+        "Freestyle (with Lil Baby)"
+      ],
+      albumStats: {
+        "MUSIC": 13,
+        "Whole Lotta Red": 4,
+        "Die Lit": 3,
+        "Covers": 3,
+        "Others": 2,
+        "Playboi Carti": 1
+      },
+      notes: "Carti brought out Lil Baby, Veeze, Rylo Rodriguez & 42 Dugg on stage."
+    }
+  ]
+},
+{
+  city: "Pittsburgh",
+  state: "PA",
+  venue: "PPG Paints Arena",
+  date: "2025-11-01",
+  lat: 40.439,
+  lon: -79.989,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 2,
+        "Tantrum": 1
+      },
+      notes: "Came down onto right truck to perform 'Profit'."
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:20 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:50 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:35 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "yes",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Others": 2,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:45 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "Place (Tour debut)",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far"
+      ],
+      uniqueSongs: ["Place (Tour debut)"],
+      albumStats: {
+        "MUSIC": 14,
+        "Whole Lotta Red": 6,
+        "Die Lit": 3,
+        "Covers": 2,
+        "Others": 2,
+        "Playboi Carti": 1
+      }
+    }
+  ]
+},
+{
+  city: "Boston",
+  state: "MA",
+  venue: "TD Garden",
+  date: "2025-11-04",
+  lat: 42.366,
+  lon: -71.062,
+  defaultArtistIndex: 3,
+  artists: [
+    {
+      name: "Homixide Gang",
+      onstage: "7:00 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:40 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:20 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "yes",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Others": 2,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:30 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Place",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 6,
+        "Die Lit": 3,
+        "Covers": 2,
+        "Playboi Carti": 1,
+        "Others": 1
+      }
+    }
+  ],
+  notes: "ApolloRed1 did not perform at this show."
+},
+{
+  city: "Brooklyn",
+  state: "NY",
+  venue: "Barclays Center",
+  date: "2025-11-06",
+  lat: 40.682,
+  lon: -73.975,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "Ready2Purge",
+        "Face Tattoos",
+        "#ARP",
+        "RedFlag",
+        "Profit"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "ApolloRed1 Vs the World": 2,
+        "Midnight Blassic": 2,
+        "Tantrum": 1
+      },
+      notes: "Setlist incomplete."
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:25 PM",
+      songs: [
+        "Lifestyle (only the intro)",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: ["Lifestyle (only the intro)"],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:50 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:35 PM",
+      songs: [
+        "catastrophe (Live debut; shortened)",
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "yes",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: ["catastrophe (Live debut; shortened)"],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Others": 3,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:50 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Turks (NAV cover) (with NAV)",
+        "Lemonade (Internet Money cover) (with NAV)",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "Made It This Far"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "MUSIC": 13,
+        "Whole Lotta Red": 5,
+        "Die Lit": 3,
+        "Covers": 3,
+        "Playboi Carti": 1,
+        "Others": 1
+      }
+    }
+  ]
+},
+{
+  city: "Newark",
+  state: "NJ",
+  venue: "Prudential Center",
+  date: "2025-11-07",
+  lat: 40.733,
+  lon: -74.171,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:00 PM",
+      songs: [
+        "Face Tattoos",
+        "PBrazy",
+        "Georgia Boy"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3
+      },
+      notes: "Setlist incomplete."
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:35 PM",
+      songs: [
+        "Lifestyle",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Homixide Lifestyle 2": 4,
+        "Homixide Lifestyle": 1
+      },
+      notes: "Setlist incomplete."
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "7:55 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "ABOUT MONEY",
+        "catch a kill",
+        "FAKENGGAS",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "8:35 PM",
+      songs: [
+        "catastrophe",
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "i need u",
+        "Succubus",
+        "yes",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 9,
+        "More Chaos": 3,
+        "Others": 2,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "9:45 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "FE!N (Travis Scott cover)",
+        "CARNIVAL (Ye cover)",
+        "TOXIC",
+        "OLYMPIAN",
+        "Made It This Far"
+      ],
+      uniqueSongs: [
+        "Lil Yachty appeared on stage with Carti"
+      ],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 4,
+        "Die Lit": 3,
+        "Covers": 3,
+        "Playboi Carti": 1,
+        "Others": 1
+      },
+      notes: "Lil Yachty appeared on stage with Carti."
+    }
+  ]
+},
+{
+  city: "Hartford",
+  state: "CT",
+  venue: "PeoplesBank Arena",
+  date: "2025-11-08",
+  lat: 41.766,
+  lon: -72.673,
+  defaultArtistIndex: 4,
+  artists: [
+    {
+      name: "ApolloRed1",
+      onstage: "7:30 PM",
+      songs: [
+        "#ARP",
+        "Georgia Boy",
+        "RedFlag",
+        "Face Tattoos",
+        "PBrazy"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "Midnight Blassic": 3,
+        "ApolloRed1 Vs the World": 1,
+        "Tantrum": 1
+      }
+    },
+    {
+      name: "Homixide Gang",
+      onstage: "7:50 PM",
+      songs: [
+        "Lifestyle (Snippet)",
+        "PC5",
+        "REDRAG",
+        "VILLAIN",
+        "5G",
+        "R50",
+        "FACET!ME",
+        "Uzi Work",
+        "Drakon !",
+        "5unna"
+      ],
+      uniqueSongs: ["Lifestyle (Snippet)"],
+      albumStats: {
+        "Homixide Lifestyle 2": 5,
+        "Homixide Lifestyle": 2,
+        "i5u5we5": 1,
+        "Snot or Not": 1,
+        "Snotty World": 1
+      }
+    },
+    {
+      name: "Destroy Lonely",
+      onstage: "8:20 PM",
+      songs: [
+        "LOCK IN",
+        "SYRUP SIPPIN",
+        "DOUBT IT",
+        "BLITZ",
+        "FAKENGGAS",
+        "ABOUT MONEY",
+        "catch a kill",
+        "screwed up",
+        "In The Air",
+        "how u feel?",
+        "NEVEREVER",
+        "NOSTYLIST",
+        "if looks could kill"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "LOVE LASTS FOREVER": 4,
+        "NO STYLIST": 4,
+        "If Looks Could Kill": 3,
+        "<3³": 1,
+        "Others": 1
+      }
+    },
+    {
+      name: "Ken Carson",
+      onstage: "9:00 PM",
+      songs: [
+        "Lord Of Chaos",
+        "Blakk Rokkstar",
+        "Money Spread",
+        "delusional",
+        "It's Over",
+        "Lose It",
+        "Green Room",
+        "mewtwo",
+        "i need u",
+        "Succubus",
+        "yes",
+        "Me N My Kup",
+        "Rock N Roll",
+        "Freestyle 2",
+        "ss",
+        "overseas",
+        "Fighting My Demons"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "A Great Chaos": 10,
+        "More Chaos": 3,
+        "Others": 2,
+        "Project X": 1,
+        "X": 1
+      }
+    },
+    {
+      name: "Playboi Carti",
+      onstage: "10:15 PM",
+      songs: [
+        "POP OUT",
+        "POP OUT (Played again)",
+        "OPM BABI",
+        "CRANK",
+        "COCAINE NOSE",
+        "OVERLY",
+        "CHARGE DEM HOES A FEE",
+        "K POP",
+        "LIKE WEEZY",
+        "GOOD CREDIT",
+        "HBA",
+        "Stop Breathing",
+        "On That Time",
+        "Rockstar Made",
+        "R.I.P.",
+        "Timeless (The Weeknd cover)",
+        "EVIL JORDAN",
+        "ILoveUIHateU",
+        "2024",
+        "Shoota",
+        "Location",
+        "Long Time (Intro)",
+        "Sky",
+        "FE!N (Travis Scott cover)",
+        "CARNIVAL (Ye cover)",
+        "Type Shit (Future & Metro Boomin cover)",
+        "Made It This Far"
+      ],
+      uniqueSongs: [],
+      albumStats: {
+        "MUSIC": 15,
+        "Whole Lotta Red": 5,
+        "Covers": 4,
+        "Die Lit": 3,
+        "Playboi Carti": 1,
+        "Others": 1
+      }
+    }
+  ]
+}
+
+    ];
+
+  // --------- 2. Album color palette ---------
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+const showDetailsEl = document.getElementById("show-details");
+
+function normalizeSongTitle(title) {
+  if (!title) return "";
+  return title.replace(/\s*\(.*?\)\s*/g, "").trim();
+}
+
+// Build { artistName: { totalShows, songs: [...] } }
+function computeTourStats() {
+  const statsByArtist = {};
+  const showsByArtist = {};
+
+  shows.forEach((show, showIndex) => {
+    show.artists.forEach((artist) => {
+      const artistName = artist.name;
+
+      // Do NOT count Ken Carson & Destroy Lonely's Las Vegas show in stats
+      if (
+        show.city === "Las Vegas" &&
+        show.state === "NV" &&
+        (artistName === "Ken Carson" || artistName === "Destroy Lonely")
+      ) {
+        return; // skip this artist for this show in the stats
+      }
+
+      if (!statsByArtist[artistName]) statsByArtist[artistName] = {};
+      if (!showsByArtist[artistName]) showsByArtist[artistName] = new Set();
+      showsByArtist[artistName].add(showIndex);
+
+      const songsMap = statsByArtist[artistName];
+
+      artist.songs.forEach((songTitle) => {
+        const baseTitle = normalizeSongTitle(songTitle);
+        const key = baseTitle.toUpperCase();
+
+        if (!songsMap[key]) {
+          songsMap[key] = {
+            label: baseTitle,
+            plays: 0,
+            showIndices: new Set()
+          };
+        }
+
+        const songStat = songsMap[key];
+        songStat.plays += 1;
+        songStat.showIndices.add(showIndex);
+      });
+    });
+  });
+
+  const result = {};
+  Object.entries(statsByArtist).forEach(([artistName, songsMap]) => {
+    const totalShows = showsByArtist[artistName]
+      ? showsByArtist[artistName].size
+      : 0;
+
+    const songs = Object.values(songsMap).map((info) => ({
+      songName: info.label,
+      plays: info.plays,
+      showCount: info.showIndices.size,
+      pctShows:
+        totalShows > 0 ? (info.showIndices.size / totalShows) * 100 : 0
+    }));
+
+    result[artistName] = {
+      totalShows,
+      songs
+    };
+  });
+
+  return result;
+}
+
+function attachSongStatButtonHandlers(container) {
+  const buttons = container.querySelectorAll(".song-stat-button");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pct = btn.dataset.pct;
+      const showCount = btn.dataset.shows;
+      const totalShows = btn.dataset.totalShows;
+      const freqEl = btn.parentElement.querySelector(".song-frequency");
+      const isVisible = freqEl.style.display === "block";
+
+      container
+        .querySelectorAll(".song-frequency")
+        .forEach((el) => {
+          el.style.display = "none";
+        });
+
+      if (!isVisible) {
+        freqEl.textContent = `${pct}% of shows (${showCount} of ${totalShows})`;
+        freqEl.style.display = "block";
+      }
+    });
+  });
+}
+
+// Song Stats panel with artist tabs
+function renderSongStatsPanel() {
+  const stats = computeTourStats();
+
+  // Use artist order from first show
+  const artistOrder = shows[0].artists
+    .map((a) => a.name)
+    .filter((name) => stats[name]);
+  const defaultArtist = artistOrder[0];
+
+  function buildArtistStatsHTML(artistName) {
+    const artistStats = stats[artistName];
+    const totalShows = artistStats.totalShows;
+    const sortedSongs = artistStats.songs
+      .slice()
+      .sort(
+        (a, b) =>
+          b.plays - a.plays || a.songName.localeCompare(b.songName)
+      );
+
+    const songsList = sortedSongs
+      .map((song) => {
+        const pctRounded = Math.round(song.pctShows);
+        const playsLabel = song.plays === 1 ? "play" : "plays";
+        return `
+          <li class="song-stat-item">
+            <button
+              class="song-stat-button"
+              data-pct="${pctRounded}"
+              data-shows="${song.showCount}"
+              data-total-shows="${totalShows}"
+            >
+              <span class="song-name">${song.songName}</span>
+              <span class="song-plays">${song.plays} ${playsLabel}</span>
+            </button>
+            <div class="song-frequency" style="display:none;"></div>
+          </li>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">Song stats — ${artistName}</div>
+          <div class="show-date meta">
+            Across ${totalShows} show${totalShows === 1 ? "" : "s"}
+          </div>
+        </div>
+        <ul class="song-stats-list">
+          ${songsList}
+        </ul>
+      </div>
+    `;
+  }
+
+  const artistTabsHtml = artistOrder
+    .map(
+      (name) => `
+        <button
+          class="artist-tab ${
+            name === defaultArtist ? "active" : ""
+          }"
+          data-artist-name="${name}"
+        >
+          <span class="artist-name">${name}</span>
+          <span class="artist-tab-time">Stats</span>
+        </button>
+      `
+    )
+    .join("");
+
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="songs-title">Lineup · tap an artist</div>
+      <div class="artist-tabs" id="stats-artist-tabs">
+        ${artistTabsHtml}
+      </div>
+    </div>
+    <div id="artist-stats-details">
+      ${buildArtistStatsHTML(defaultArtist)}
+    </div>
+  `;
+
+  const tabsContainer = document.getElementById("stats-artist-tabs");
+  const detailsEl = document.getElementById("artist-stats-details");
+
+  tabsContainer.querySelectorAll(".artist-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabsContainer
+        .querySelectorAll(".artist-tab")
+        .forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      const artistName = tab.dataset.artistName;
+      detailsEl.innerHTML = buildArtistStatsHTML(artistName);
+      attachSongStatButtonHandlers(detailsEl);
+    });
+  });
+
+  attachSongStatButtonHandlers(detailsEl);
+}
+// --------- 3. SHOW LIST TAB ---------
+
+function renderShowList() {
+  // Sort shows by date
+  const sortedShows = [...shows].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  const today = new Date();
+
+  // Build HTML
+  const showListHTML = sortedShows
+    .map((show, index) => {
+      const showDate = new Date(show.date);
+      const isFuture = showDate > today;
+
+      return `
+        <li class="show-list-item ${isFuture ? "future" : "past"}" data-show-index="${index}">
+          <div class="show-list-date">${formatDate(show.date)}</div>
+          <div class="show-list-venue">${show.venue}</div>
+          <div class="show-list-city">${show.city.toUpperCase()}, ${show.state}</div>
+        </li>
+      `;
+    })
+    .join("");
+
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="show-header">
+        <div class="show-location">Antagonist 2.0 Tour</div>
+        <div class="show-date meta">All tour dates</div>
+      </div>
+      <ul class="show-list">
+        ${showListHTML}
+      </ul>
+    </div>
+  `;
+
+  // Add interactivity
+  document.querySelectorAll(".show-list-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const showIndex = parseInt(item.dataset.showIndex);
+      const clickedShow = shows[showIndex];
+      const showDate = new Date(clickedShow.date);
+      const today = new Date();
+
+      // Only open setlist if the show already happened
+      if (showDate <= today) {
+        renderShowDetails(clickedShow);
+      } else {
+        alert("This show has not happened yet!");
+      }
+    });
+  });
+}
+
+// --------- 4. TAB SWITCH LOGIC ---------
+
+const songStatsTab = document.getElementById("song-stats-tab");
+const showListTab = document.getElementById("show-list-tab");
+
+songStatsTab.addEventListener("click", () => {
+  songStatsTab.classList.add("active");
+  showListTab.classList.remove("active");
+  renderSongStatsPanel();
+});
+
+showListTab.addEventListener("click", () => {
+  showListTab.classList.add("active");
+  songStatsTab.classList.remove("active");
+  renderShowList();
+});
+
+    // --------- 3. Per-show rendering ---------
+function renderShowDetails(show) {
+  // Handle missing data gracefully
+  if (!show || !show.artists) {
+    showDetailsEl.innerHTML = `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">${show.city || "Unknown"}, ${show.state || ""}</div>
+          <div class="show-venue">${show.venue || ""}</div>
+          <div class="show-date meta">${formatDate(show.date)}</div>
+        </div>
+        <p class="meta">Setlist unavailable for this show.</p>
+      </div>`;
+    return;
+  }
+
+  // Filter valid artists (those with songs)
+  const validArtists = show.artists.filter(a => a.songs && a.songs.length > 0);
+  if (validArtists.length === 0) {
+    showDetailsEl.innerHTML = `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">${show.city}, ${show.state}</div>
+          <div class="show-venue">${show.venue}</div>
+          <div class="show-date meta">${formatDate(show.date)}</div>
+        </div>
+        <p class="meta">This show did not have any confirmed performances.</p>
+      </div>`;
+    return;
+  }
+
+  const defaultArtist = validArtists[show.defaultArtistIndex] || validArtists[0];
+
+  // Build setlist view
+  function buildArtistHTML(artist) {
+    const songList = artist.songs
+      .map((song, i) => `<li>${i + 1}. ${song}</li>`)
+      .join("");
+
+    const notes = artist.notes
+      ? `<div class="section">
+          <h3 class="songs-title">Tour Notes</h3>
+          <p class="meta">${artist.notes}</p>
+        </div>`
+      : `<div class="section">
+          <h3 class="songs-title">Tour Notes</h3>
+          <p class="meta">No special tour notes listed here (yet).</p>
+        </div>`;
+
+    const albums = artist.albumStats
+      ? Object.entries(artist.albumStats)
+          .map(([album, count]) => `<span class="album-pill"><strong>${album}</strong> · ${count} ${count === 1 ? "song" : "songs"}</span>`)
+          .join("")
+      : "";
+
+    const albumSection = albums
+      ? `<div class="section">
+          <h3 class="songs-title">Albums in This Set</h3>
+          <div class="album-stats">${albums}</div>
+        </div>`
+      : "";
+
+    return `
+      <div class="section">
+        <div class="show-header">
+          <div class="show-location">${artist.name}</div>
+          <div class="show-date meta">
+            ${
+              artist.onstage && artist.onstage !== "N/A"
+                ? `On stage: ${artist.onstage}`
+                : "Time not available"
+            }
+          </div>
+        </div>
+
+        <h3 class="songs-title">Full Set</h3>
+        <ul class="song-list">${songList}</ul>
+      </div>
+
+      ${notes}
+      ${albumSection}
+    `;
+  }
+
+  // Artist tabs (switch between artists)
+  const artistTabs = validArtists
+    .map(
+      (artist, i) => `
+      <button class="artist-tab ${artist === defaultArtist ? "active" : ""}" data-artist-index="${i}">
+        <span class="artist-name">${artist.name}</span>
+        <span class="artist-tab-time">${
+          artist.onstage && artist.onstage !== "N/A" ? artist.onstage : "N/A"
+        }</span>
+      </button>`
+    )
+    .join("");
+
+  // Vegas note (custom)
+  const specialNote =
+    show.city === "Las Vegas"
+      ? `<p class="meta" style="margin-top:6px;">Note: Ken Carson and Destroy Lonely did not perform at this stop due to scheduling/radius restrictions.</p>`
+      : "";
+
+  // Render
+  showDetailsEl.innerHTML = `
+    <div class="section">
+      <div class="show-header">
+        <div class="show-location">${show.city}, ${show.state}</div>
+        <div class="show-venue">${show.venue}</div>
+        <div class="show-date meta">${formatDate(show.date)}</div>
+      </div>
+
+      <div class="artist-tabs" id="artist-tabs">${artistTabs}</div>
+      ${specialNote}
+    </div>
+
+    <div id="artist-details">
+      ${buildArtistHTML(defaultArtist)}
+    </div>
+  `;
+
+  // Tab switching
+  const tabs = document.querySelectorAll(".artist-tab");
+  const details = document.getElementById("artist-details");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      const i = parseInt(tab.dataset.artistIndex, 10);
+      details.innerHTML = buildArtistHTML(validArtists[i]);
+    });
+  });
+}
+
+    // --------- 4. Wire up Song Stats button ---------
+    const songStatsTabEl = document.getElementById("song-stats-tab");
+    if (songStatsTabEl) {
+      songStatsTabEl.addEventListener("click", () => {
+        renderSongStatsPanel();
+        songStatsTabEl.classList.add("active");
+      });
+    }
+
+    // --------- 5. Map & markers ---------
+    const map = L.map("map", {
+      scrollWheelZoom: true,
+      zoomControl: true
+    }).setView([40, -100], 4);
+
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        maxZoom: 18,
+        attribution:
+          '&copy; <a href="https://carto.com/">CARTO</a> · basemap'
+      }
+    ).addTo(map);
+
+    shows.forEach((show) => {
+      const marker = L.circleMarker([show.lat, show.lon], {
+        radius: 13,
+        weight: 3,
+        color: "#f13b56",
+        fillColor: "#f13b56",
+        fillOpacity: 0.85
+      }).addTo(map);
+
+      const dateLabel = formatDate(show.date);
+
+      marker.bindTooltip(
+        `<strong>${show.city}, ${show.state}</strong><br/>
+         ${dateLabel}<br/>
+         <em>Click to view all sets</em>`,
+        { direction: "top", opacity: 0.9 }
+      );
+
+      marker.on("click", () => {
+        if (songStatsTabEl) {
+          songStatsTabEl.classList.remove("active");
+        }
+        renderShowDetails(show);
+      });
+    });
+
+    if (shows.length > 0) {
+      const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
+      map.fitBounds(bounds.pad(0.2));
+    }
+  </script>
+</body>
+</html>
