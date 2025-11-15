@@ -465,10 +465,6 @@
   ></script>
 
   <script>
-	  // Make these available to all functions
-let map;
-let tourBounds;
-
     // --------- 1. Data for shows (SLC + Portland) ---------
 
     const shows = [
@@ -957,30 +953,29 @@ let tourBounds;
             }
           },
           {
-  name: "Homixide Gang",
-  onstage: "7:20 PM",
-  songs: [
-    "K9ine (new song, live debut)",
-    "PC5",
-    "REDDRAG",
-    "VILLAIN",
-    "5G (shortened)",
-    "R50",
-    "FACET!ME",
-    "Uzi Work",
-    "Drakon!",
-    "5unna"
-  ],
-  uniqueSongs: [],
-  albumStats: {
-    "Homixide Lifestyle 2": 5,
-    "Homixide Lifestyle": 2,
-    "i5u5we5": 1,
-    "Snot or Not": 1,
-    "Snotty World": 1
-  }
-},
-
+            name: "Homixide Gang",
+            onstage: "7:20 PM",
+            songs: [
+              "K9ine (new song, live debut)",
+              "PC5",
+              "REDDRAG",
+              "VILLAIN",
+              "5G (shortened)",
+              "R50",
+              "FACET!ME",
+              "Uzi Work",
+              "Drakon!",
+              "Lifestyle"
+            ],
+            uniqueSongs: ["K9ine live debut"],
+            albumStats: {
+              "Homixide Lifestyle 2": 5,
+              "Homixide Lifestyle": 2,
+              "i5u5we5": 1,
+              "Snot or Not": 1,
+			  "Others": 1
+            }
+          },
           {
             name: "Destroy Lonely",
             onstage: "7:50 PM",
@@ -3323,6 +3318,7 @@ let tourBounds;
       }
     }
   ]
+}
 
     ];
 
@@ -3537,27 +3533,6 @@ function renderSongStatsPanel() {
   attachSongStatButtonHandlers(detailsEl);
 }
 // --------- 3. SHOW LIST TAB ---------
-function renderUpcomingShowEmptyState(show) {
-  // Uses your existing "showDetailsEl" that renders the right-side panel
-  showDetailsEl.innerHTML = `
-    <div class="section">
-      <div class="show-header">
-        <div class="show-location">${show.city}, ${show.state}</div>
-        <div class="show-venue">${show.venue || ""}</div>
-        <div class="show-date meta">${formatDate(show.date)}</div>
-      </div>
-
-      <p class="meta" style="margin-top:8px;">
-        This stop hasn’t happened yet — setlist will appear after the show.
-      </p>
-
-      <ul class="meta" style="margin-top:6px; line-height:1.4;">
-        <li>Tap <strong>Song Stats</strong> for tour-wide trends.</li>
-        <li>Come back after the date for full sets and on-stage times.</li>
-      </ul>
-    </div>
-  `;
-}
 
 function renderShowList() {
   // Sort shows by date
@@ -3597,27 +3572,11 @@ function renderShowList() {
 
   // Add interactivity
   document.querySelectorAll(".show-list-item").forEach((item) => {
-  item.addEventListener("click", () => {
-    const showIndex = parseInt(item.dataset.showIndex, 10);
-    const clickedShow = shows[showIndex];
-    const showDate = new Date(clickedShow.date);
-    const today = new Date();
-
-    if (showDate <= today) {
-      // PAST show: zoom map and show details
-      if (map && clickedShow.lat && clickedShow.lon) {
-        map.flyTo([clickedShow.lat, clickedShow.lon], 10, { duration: 0.8 });
-        // Optional: on small screens, make sure the map is back in view
-        document.getElementById("map")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-      renderShowDetails(clickedShow);
-    } else {
-      // FUTURE show: friendly empty state
-      renderUpcomingShowEmptyState(clickedShow);
-    }
-  });
-});
-
+    item.addEventListener("click", () => {
+      const showIndex = parseInt(item.dataset.showIndex);
+      const clickedShow = shows[showIndex];
+      const showDate = new Date(clickedShow.date);
+      const today = new Date();
 
       // Only open setlist if the show already happened
       if (showDate <= today) {
@@ -3790,7 +3749,7 @@ function renderShowDetails(show) {
     }
 
     // --------- 5. Map & markers ---------
-	  map = L.map("map", {
+    const map = L.map("map", {
       scrollWheelZoom: true,
       zoomControl: true
     }).setView([40, -100], 4);
@@ -3830,29 +3789,10 @@ function renderShowDetails(show) {
       });
     });
 
-   // Compute and save the full-tour bounds once all markers exist
-if (shows.length > 0) {
-  tourBounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
-  map.fitBounds(tourBounds.pad(0.2)); // pad adds a little breathing room
-}
-// Add a small "Reset" button (top-right) to return to full-tour view
-const ResetControl = L.Control.extend({
-  onAdd() {
-    const btn = L.DomUtil.create("button", "leaflet-bar");
-    btn.title = "Reset map";
-    btn.style.padding = "6px 10px";
-    btn.style.cursor = "pointer";
-    btn.textContent = "Reset";
-    L.DomEvent.on(btn, "click", (e) => {
-      L.DomEvent.stopPropagation(e);
-      if (tourBounds) map.fitBounds(tourBounds.pad(0.2));
-    });
-    return btn;
-  },
-  onRemove() {}
-});
-map.addControl(new ResetControl({ position: "topright" }));
-
+    if (shows.length > 0) {
+      const bounds = L.latLngBounds(shows.map((s) => [s.lat, s.lon]));
+      map.fitBounds(bounds.pad(0.2));
+    }
   </script>
 </body>
 </html>
